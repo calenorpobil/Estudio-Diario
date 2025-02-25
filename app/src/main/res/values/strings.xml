@@ -22,8 +22,8 @@
         <item>Otro</item>
     </string-array>
 
-    <string name="MENÚ">MENÚ</string>
-    <string name="titulo">Título del Libro</string>
+    <string name="bt_NuevoEstudio">➕</string>
+    <string name="titulo">Título aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa del Estudio</string>
     <string name="imagen">Imagen</string>
     <string name="autor">Autor</string>
     <string name="alta">Alta</string>
@@ -32,7 +32,7 @@
     <string name="aceptar">Aceptar</string>
     <string name="bandera">🏁</string>
     <string name="formato">Formato</string>
-    <string name="numOcurrencias">Numero de ocurrencias</string>
+    <string name="numOcurrencias">0</string>
     <string name="finalizado">Finalizado</string>
     <string name="notas">Notas</string>
     <string name="prestado">Prestado</string>
@@ -49,4 +49,10 @@
     <string name="por_t_tulo">Por título</string>
     <string name="por_autor">Por autor</string>
     <string name="ocultar_datos_de_prueba">Ocultar Datos de prueba</string>
+    <string name="emojiItem">😀</string>
+    <string name="desc_estudio">Descriapción del estudio</string>
+    <string name="MasBoton">+</string>
+    <string name="bt_borrar">Borrar</string>
+    <string name="bt_modificar">Modificar</string>
+    <string name="bt_ver">Ver</string>
 </resources>

@@ -1,4 +1,4 @@
-package com.merlita.estudiodiario;
+package com.merlita.estudiodiario.Ventanas;
 
 import android.app.DatePickerDialog;
 import android.content.Intent;
@@ -13,6 +13,8 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.merlita.estudiodiario.R;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

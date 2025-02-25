@@ -5,14 +5,14 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".Ventanas.MainActivity">
 
     <TextView
         android:id="@+id/tvTitulo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Guarda Libros"
+        android:text="Estudio Diario"
         android:textColor="#000000"
         android:textSize="40sp"
         android:textStyle="bold"
@@ -36,11 +36,17 @@
 
     <Button
         android:id="@+id/btAlta"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="93dp"
+        android:layout_height="88dp"
         android:layout_marginBottom="32dp"
-        android:text="@string/MENÚ"
+        android:background="@drawable/round_button"
+        android:drawablePadding="0dp"
+        android:includeFontPadding="false"
+        android:onClick="click_alta"
+        android:padding="0dp"
+        android:text="@string/bt_NuevoEstudio"
         android:textSize="50sp"
+        app:iconPadding="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
