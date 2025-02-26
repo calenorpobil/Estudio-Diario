@@ -5,6 +5,7 @@ import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.RatingBar;
 import android.widget.TextView;
@@ -68,8 +69,7 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
             implements View.OnCreateContextMenuListener
     {
         TextView tvTitulo, tvAutor, tvFecha, tvFormato, tvBandera;
-        RatingBar rbEstrellas;
-        CheckBox cbNotas, cbFinalizado, cbPrestado;
+        Button btBorrar;
         TextView tvEmoji;
 
         public MiContenedor(@NonNull View itemView) {

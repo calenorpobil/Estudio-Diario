@@ -24,6 +24,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.merlita.estudiodiario.AdaptadorFilas;
+import com.merlita.estudiodiario.HilosCliente.EnviaArchivo;
+import com.merlita.estudiodiario.HilosCliente.RecibeArchivo;
 import com.merlita.estudiodiario.HilosCliente.SumaNumero;
 import com.merlita.estudiodiario.DialogoMenu;
 import com.merlita.estudiodiario.DialogoOrdenar;
@@ -33,6 +35,13 @@ import com.merlita.estudiodiario.Modelos.Estudio;
 import com.merlita.estudiodiario.R;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements
@@ -42,11 +51,16 @@ public class MainActivity extends AppCompatActivity implements
     ArrayList<Estudio> listaEstudios = new ArrayList<Estudio>();
     TextView tv;
     AdaptadorFilas adaptadorFilas;
-    Button btAlta;
+    Button btAlta, btCopia, btRevert;
     EditText et;
     int posicionEdicion;
     boolean ver=true;
     int numServidor=1;
+
+    File database = new File(
+            Environment.getDataDirectory()+
+                    "/data/com.merlita.estudiodiario/databases/"+"DBEstudios");
+
 
     SQLiteDatabase db;
 
@@ -64,6 +78,78 @@ public class MainActivity extends AppCompatActivity implements
         //EdgeToEdge.enable(this);
 
 
+        actualizarDatos();
+
+
+        tv = findViewById(R.id.tvTitulo);
+        btAlta = findViewById(R.id.btAlta);
+        btCopia = findViewById(R.id.btCopia);
+        btRevert = findViewById(R.id.btRevert);
+        vistaRecycler = findViewById(R.id.recyclerView);
+        adaptadorFilas = new AdaptadorFilas(this, listaEstudios);
+
+        vistaRecycler.setLayoutManager(new LinearLayoutManager(this));
+        vistaRecycler.setAdapter(adaptadorFilas);
+
+
+
+        btAlta.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v){
+                //ONCLICK
+
+                Intent i = new Intent(MainActivity.this, AltaActivity.class);
+                lanzadorAlta.launch(i);
+
+
+
+
+                //sumarNumerosServer();
+
+            }
+        });
+
+        btRevert.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                recibirArchivo();
+
+                File bk_database = new File(getFilesDir().toString()+
+                        File.separator+"bk_DBEstudios");
+                try {
+                    copiarArchivo(database, bk_database);
+                    toast("Copiado correctamente. ");
+                } catch (IOException e) {
+                    toast(e.getMessage());
+                }
+
+                File database_server = new File(getFilesDir().toString()+
+                        File.separator+"DBEstudios");
+                try {
+                    copiarArchivo(database_server, database);
+                    toast("Copiado correctamente. ");
+                } catch (IOException e) {
+                    toast(e.getMessage());
+                }
+
+                actualizarDatos();
+                adaptadorFilas.notifyDataSetChanged();
+
+
+
+            }
+        });
+
+        btCopia.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                enviarArchivo();
+
+            }
+        });
+    }
+
+    private void actualizarDatos() {
         try(EstudiosSQLiteHelper usdbh =
                     new EstudiosSQLiteHelper(this,
                             "DBEstudios", null, 1);){
@@ -80,57 +166,85 @@ public class MainActivity extends AppCompatActivity implements
 
             db.close();
         }
+    }
 
-        tv = findViewById(R.id.tvTitulo);
-        btAlta = findViewById(R.id.btAlta);
-        vistaRecycler = findViewById(R.id.recyclerView);
-        adaptadorFilas = new AdaptadorFilas(this, listaEstudios);
-
-        vistaRecycler.setLayoutManager(new LinearLayoutManager(this));
-        vistaRecycler.setAdapter(adaptadorFilas);
-
-
-
-        btAlta.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v){
-                //ONCLICK
-
-
-                File h = getFilesDir().getParentFile();
-                assert h != null;
-                //ARCHIVO SQLITE:
-                File database = new File(
-                        Environment.getDataDirectory()+
-                                "/data/com.merlita.estudiodiario/databases/"+"DBEstudios");
-                //Tamaño:
-                int size = (int) database.length();
-                //Bytes:
-                byte[] bytes = new byte[size];
-
-                tv.setText(database.isFile()+"");
-
-
-
-                toast("juan");
-
-                SumaNumero c = new SumaNumero("Hilo", numServidor);
-
-                Thread thread = new Thread(c);
-
-                thread.start();
-                try {
-                    thread.join();
-                } catch (InterruptedException e) {
-                    toast(e.getMessage());
+    private void copiarArchivo(File src, File dst) throws IOException {
+        InputStream in = new FileInputStream(src);
+        try {
+            OutputStream out = new FileOutputStream(dst);
+            try {
+                // Transfer bytes from in to out
+                byte[] buf = new byte[1024];
+                int len;
+                while ((len = in.read(buf)) > 0) {
+                    out.write(buf, 0, len);
                 }
-                numServidor = c.getValue();
-                listaEstudios.get(1).setNombre(numServidor+"");
-
-                adaptadorFilas.notifyDataSetChanged();
-
+            } finally {
+                out.close();
             }
-        });
+        } finally {
+            in.close();
+        }
+    }
+
+    private void recibirArchivo() {
+        File rutaRaiz = getFilesDir();
+        RecibeArchivo e = new RecibeArchivo("Enviar 1", rutaRaiz);
+        Thread t = new Thread(e);
+        t.start();
+        Exception error;
+        try{
+            t.join();
+        } catch (InterruptedException ex) {
+            error = e.getError();
+            toast(error.getMessage());
+        }
+        File resultado = e.getValue();
+
+        File nuevaDatabase = new File(
+                Environment.getDataDirectory()+
+                        "/data/com.merlita.estudiodiario/databases/"+"DBEstudios1");
+        nuevaDatabase = resultado;
+
+
+        toast("Copia revertida. ");
+
+
+    }
+    private void enviarArchivo() {
+
+        //ARCHIVO SQLITE:
+
+        EnviaArchivo e = new EnviaArchivo("Enviar 1", database);
+        Thread t = new Thread(e);
+        t.start();
+        try{
+            t.join();
+        } catch (InterruptedException ex) {
+            toast(ex.getMessage());
+        }
+
+        toast("Copia guardada. ");
+    }
+
+    private void sumarNumerosServer() {
+        toast("juan");
+
+        SumaNumero c = new SumaNumero("Hilo", numServidor);
+
+        Thread thread = new Thread(c);
+
+        thread.start();
+        try {
+            thread.join();
+        } catch (InterruptedException e) {
+            toast(e.getMessage());
+        }
+        numServidor = c.getValue();
+        listaEstudios.get(1).setNombre(numServidor+"");
+
+        adaptadorFilas.notifyDataSetChanged();
+
     }
 
 
@@ -332,7 +446,7 @@ public class MainActivity extends AppCompatActivity implements
         String id="";
         try(EstudiosSQLiteHelper usdbh =
                     new EstudiosSQLiteHelper(this,
-                            "DBUsuarios", null, 1);){
+                            "DBEstudios", null, 1);){
             db = usdbh.getWritableDatabase();
 
             db.execSQL("INSERT INTO estudio (nombre, descripcion) " +
@@ -376,6 +490,5 @@ public class MainActivity extends AppCompatActivity implements
         DialogoOrdenar dialog = new DialogoOrdenar();
         dialog.show(getSupportFragmentManager(), "DialogoOrdenar");
     }
-
 
 }

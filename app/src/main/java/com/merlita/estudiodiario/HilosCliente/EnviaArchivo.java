@@ -2,6 +2,7 @@ package com.merlita.estudiodiario.HilosCliente;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -40,38 +41,32 @@ public class EnviaArchivo implements Runnable{
     }
 
     public int escribeMensaje(File mensaje){
-        int respuesta=0;
-        int count;
+        int respuesta = 0;
+        final int BUFFER_SIZE = 4096; // 4 KB
 
-        try (
-                Socket socket = new Socket(SERVIDOR_IP, PUERTO);
-                BufferedReader in = new BufferedReader(
-                        new InputStreamReader(socket.getInputStream()));
-                PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-             )
-        {
-            long total = 0;
-            //Puede que haya que cambiar por: byte[] buffer = new byte[256];
-            byte[] buffer = new byte[(int) mensaje.length()];
-            FileInputStream fis = new FileInputStream(mensaje);
-            BufferedInputStream inStream = new BufferedInputStream(fis);
-            OutputStream outStream = socket.getOutputStream();
+        try (Socket socket = new Socket(SERVIDOR_IP, PUERTO);
+             DataOutputStream outStream = new DataOutputStream(socket.getOutputStream());
+             FileInputStream fis = new FileInputStream(mensaje);
+             BufferedInputStream inStream = new BufferedInputStream(fis)) {
 
-            while((count = inStream.read(buffer, 0, buffer.length)) != -1) {
-                total += count;
-                outStream.write(buffer, 0, buffer.length);
+            //ENVIAR ARCHIVO
+            outStream.writeUTF("ENVIAR");
+
+
+
+            // Enviar metadatos: nombre y tamaño
+            outStream.writeUTF(mensaje.getName()); // Nombre del archivo
+            outStream.writeLong(mensaje.length()); // Tamaño en bytes
+
+            // Enviar archivo
+            byte[] buffer = new byte[BUFFER_SIZE];
+            int count;
+            while ((count = inStream.read(buffer)) != -1) {
+                outStream.write(buffer, 0, count);
             }
 
-            outStream.flush();
-            outStream.close();
-            inStream.close();
-            socket.close();
-
-
-
-            out.println(mensaje);
-            //String res = in.readLine();
-
+            System.out.println("Archivo enviado: " + mensaje.getName());
+            respuesta = 1;
 
         } catch (UnknownHostException e) {
             System.err.println("Host desconocido: " + SERVIDOR_IP);

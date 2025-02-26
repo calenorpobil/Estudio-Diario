@@ -55,4 +55,6 @@
     <string name="bt_borrar">Borrar</string>
     <string name="bt_modificar">Modificar</string>
     <string name="bt_ver">Ver</string>
+    <string name="bt_revert">🔙</string>
+    <string name="bt_copia">☁</string>
 </resources>

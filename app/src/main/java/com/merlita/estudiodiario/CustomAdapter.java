@@ -63,10 +63,10 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvTitle = itemView.findViewById(R.id.tvTitulo);
-            buttonsRow = itemView.findViewById(R.id.filaBotones);
+            /*buttonsRow = itemView.findViewById(R.id.filaBotones);
             btnEdit = itemView.findViewById(R.id.btnEdit);
             btnDelete = itemView.findViewById(R.id.btnDelete);
-            btnShare = itemView.findViewById(R.id.btnShare);
+            btnShare = itemView.findViewById(R.id.btnShare);*/
 
             itemView.setOnClickListener(v -> {
                 int previous = selectedPosition;
