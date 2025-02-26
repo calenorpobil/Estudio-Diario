@@ -1,15 +1,15 @@
-package com.merlita.estudiodiario.Cliente;
+package com.merlita.estudiodiario.HilosCliente;
 
 import java.io.*;
 import java.net.*;
 
-public class ClienteSocket implements Runnable{
+public class SumaNumero implements Runnable{
     private static final String SERVIDOR_IP = "10.0.2.2";
     private static final int PUERTO = 8888;
     int input;
 
 
-    public ClienteSocket(String nombre, int input){
+    public SumaNumero(String nombre, int input){
 
         this.input = input;
     }

@@ -21,7 +21,6 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
     private Context context;
     private ArrayList<Estudio> lista;
     private boolean viendoDatosPrueba=true;
-    private int selectedPosition = -1;
     private OnButtonClickListener listener;
 
     public interface OnButtonClickListener {

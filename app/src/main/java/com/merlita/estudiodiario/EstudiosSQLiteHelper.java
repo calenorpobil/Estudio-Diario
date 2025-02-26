@@ -1,10 +1,11 @@
 package com.merlita.estudiodiario;
 
-import android.content.ContentValues;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.database.sqlite.SQLiteOpenHelper;
+
+import java.io.File;
 
 public class EstudiosSQLiteHelper extends SQLiteOpenHelper {
 
@@ -27,16 +28,11 @@ public class EstudiosSQLiteHelper extends SQLiteOpenHelper {
         db.execSQL(sqlCreate);
     }
 
-    boolean addEstudio(String categoria, String titulo, String autor,
-                     String idioma, Long fecha_lectura_ini, Long fecha_lectura_fin,
-                     String prestado_a, Float valoracion, String formato, String notas){
-        SQLiteDatabase sqldb = getWritableDatabase();
 
-        ContentValues cv = new ContentValues();
-        cv.put("categoria", categoria);
 
-        return sqldb.insert("libros", null, cv)!=-1;
-    }
+
+
+
 
 
 

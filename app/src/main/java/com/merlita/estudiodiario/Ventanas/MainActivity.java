@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -13,7 +14,6 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
@@ -24,16 +24,15 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.merlita.estudiodiario.AdaptadorFilas;
-import com.merlita.estudiodiario.Cliente.ClienteSocket;
-import com.merlita.estudiodiario.DatosLibros;
+import com.merlita.estudiodiario.HilosCliente.SumaNumero;
 import com.merlita.estudiodiario.DialogoMenu;
 import com.merlita.estudiodiario.DialogoOrdenar;
 import com.merlita.estudiodiario.EstudiosSQLiteHelper;
-import com.merlita.estudiodiario.Excepciones.miExcepcion;
 import com.merlita.estudiodiario.FragmentoTexto;
 import com.merlita.estudiodiario.Modelos.Estudio;
 import com.merlita.estudiodiario.R;
 
+import java.io.File;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements
@@ -46,9 +45,6 @@ public class MainActivity extends AppCompatActivity implements
     Button btAlta;
     EditText et;
     int posicionEdicion;
-    DatosLibros auxiliar;
-    private final ArrayList<DatosLibros> datosVacio =
-            new ArrayList<>();
     boolean ver=true;
     int numServidor=1;
 
@@ -67,9 +63,10 @@ public class MainActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_main);
         //EdgeToEdge.enable(this);
 
+
         try(EstudiosSQLiteHelper usdbh =
-                new EstudiosSQLiteHelper(this,
-                        "DBUsuarios", null, 1);){
+                    new EstudiosSQLiteHelper(this,
+                            "DBEstudios", null, 1);){
             db = usdbh.getWritableDatabase();
             //db.execSQL("DROP TABLE IF EXISTS bdlibros");
 
@@ -81,10 +78,8 @@ public class MainActivity extends AppCompatActivity implements
 
 
 
-
             db.close();
         }
-
 
         tv = findViewById(R.id.tvTitulo);
         btAlta = findViewById(R.id.btAlta);
@@ -100,9 +95,26 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onClick(View v){
                 //ONCLICK
+
+
+                File h = getFilesDir().getParentFile();
+                assert h != null;
+                //ARCHIVO SQLITE:
+                File database = new File(
+                        Environment.getDataDirectory()+
+                                "/data/com.merlita.estudiodiario/databases/"+"DBEstudios");
+                //Tamaño:
+                int size = (int) database.length();
+                //Bytes:
+                byte[] bytes = new byte[size];
+
+                tv.setText(database.isFile()+"");
+
+
+
                 toast("juan");
 
-                ClienteSocket c = new ClienteSocket("Hilo", numServidor);
+                SumaNumero c = new SumaNumero("Hilo", numServidor);
 
                 Thread thread = new Thread(c);
 
