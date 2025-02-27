@@ -23,7 +23,7 @@ public class EstudiosSQLiteHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         //Se ejecuta la sentencia SQL de creaci�n de la tabla
-        db.execSQL("DROP TABLE IF EXISTS estudio");
+        //db.execSQL("DROP TABLE IF EXISTS estudio");
 
         db.execSQL(sqlCreate);
     }

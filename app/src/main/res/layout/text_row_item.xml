@@ -31,7 +31,7 @@
         android:textColor="#000000"
         android:textSize="16sp"
         android:textStyle="bold"
-        app:layout_constraintEnd_toStartOf="@+id/tvFecha"
+        app:layout_constraintEnd_toStartOf="@+id/tvCuenta"
         app:layout_constraintStart_toEndOf="@id/tvEmoji"
         app:layout_constraintTop_toTopOf="@id/tvEmoji" />
 
@@ -47,14 +47,14 @@
         android:textAlignment="textStart"
         android:textColor="#2C2C2C"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/tvFecha"
+        app:layout_constraintEnd_toStartOf="@+id/tvCuenta"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="@+id/tvTitulo"
         app:layout_constraintTop_toBottomOf="@+id/tvTitulo" />
 
 
     <TextView
-        android:id="@+id/tvFecha"
+        android:id="@+id/tvCuenta"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:paddingEnd="16sp"

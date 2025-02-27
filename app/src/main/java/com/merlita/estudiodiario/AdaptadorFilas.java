@@ -6,8 +6,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.RatingBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -16,7 +14,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.merlita.estudiodiario.Modelos.Estudio;
 
 import java.util.ArrayList;
-import java.util.Collections;
 
 public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiContenedor> {
     private Context context;
@@ -68,7 +65,7 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
     public static class MiContenedor extends RecyclerView.ViewHolder
             implements View.OnCreateContextMenuListener
     {
-        TextView tvTitulo, tvAutor, tvFecha, tvFormato, tvBandera;
+        TextView tvTitulo, tvAutor, tvFecha;
         Button btBorrar;
         TextView tvEmoji;
 
@@ -77,8 +74,7 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
 
             tvTitulo = (TextView) itemView.findViewById(R.id.tvTitulo);
             tvAutor = (TextView) itemView.findViewById(R.id.tvDescripcion);
-            tvFecha = (TextView) itemView.findViewById(R.id.tvFecha);
-            tvFormato = (TextView) itemView.findViewById(R.id.tvFormato);
+            tvFecha = (TextView) itemView.findViewById(R.id.tvCuenta);
             tvEmoji = (TextView) itemView.findViewById(R.id.tvEmoji);
             itemView.setOnCreateContextMenuListener(this);
         }
