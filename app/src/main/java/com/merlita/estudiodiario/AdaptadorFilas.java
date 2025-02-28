@@ -21,6 +21,8 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
     private boolean viendoDatosPrueba=true;
     private OnButtonClickListener listener;
 
+    int cuenta = 0;
+
     public interface OnButtonClickListener {
         void onEditClick(int position);
         void onDeleteClick(int position);
@@ -44,7 +46,7 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
         Estudio estudio = lista.get(position);
         holder.tvTitulo.setText(estudio.getNombre());
         holder.tvAutor.setText(estudio.getDescripcion());
-        holder.tvEmoji.setText("🔵");
+        holder.tvCuenta.setText(estudio.getCuenta()+"");
 
     }
 
@@ -62,21 +64,36 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
 
 
 
-    public static class MiContenedor extends RecyclerView.ViewHolder
+    public class MiContenedor extends RecyclerView.ViewHolder
             implements View.OnCreateContextMenuListener
     {
-        TextView tvTitulo, tvAutor, tvFecha;
-        Button btBorrar;
-        TextView tvEmoji;
+        TextView tvTitulo, tvAutor, tvCuenta;
+        Button btEmoji, btMas;
 
         public MiContenedor(@NonNull View itemView) {
             super(itemView);
 
             tvTitulo = (TextView) itemView.findViewById(R.id.tvTitulo);
             tvAutor = (TextView) itemView.findViewById(R.id.tvDescripcion);
-            tvFecha = (TextView) itemView.findViewById(R.id.tvCuenta);
-            tvEmoji = (TextView) itemView.findViewById(R.id.tvEmoji);
+            tvCuenta = (TextView) itemView.findViewById(R.id.tvCuenta);
+            btEmoji = (Button) itemView.findViewById(R.id.btEmoji);
+            btMas = (Button) itemView.findViewById(R.id.btMas);
             itemView.setOnCreateContextMenuListener(this);
+
+            btEmoji.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    cuenta--;
+                    tvCuenta.setText(cuenta+"");
+                }
+            });
+            btMas.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    cuenta++;
+                    tvCuenta.setText(cuenta+"");
+                }
+            });
         }
 
         @Override

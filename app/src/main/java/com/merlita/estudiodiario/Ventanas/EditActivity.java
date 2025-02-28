@@ -20,7 +20,7 @@ import java.util.Calendar;
 import java.util.Locale;
 
 public class EditActivity extends AppCompatActivity {
-    EditText etTitulo, etAutor, etFechaInicio,
+    EditText etTitulo, etAutor, etCuenta, etFechaInicio,
             etFechaFin, etPrestado, etNotas, etValoracion;
     CheckBox cbFinalizado;
     Button bt;
@@ -42,12 +42,15 @@ public class EditActivity extends AppCompatActivity {
 
         String nombre = upIntent.getString("NOMBRE");
         String desc = upIntent.getString("DESCRIPCION");
-        etTitulo = findViewById(R.id.etTitulo);
-        etAutor = findViewById(R.id.etAutor);
+        String cuenta = upIntent.getString("CUENTA");
+        etTitulo = findViewById(R.id.etNombre);
+        etAutor = findViewById(R.id.etDescripcion);
+        etCuenta = findViewById(R.id.etCuenta);
 
 // Poblar campos de texto
         etTitulo.setText(nombre);
         etAutor.setText(desc);
+        etCuenta.setText(cuenta);
 
     }
 
@@ -55,13 +58,14 @@ public class EditActivity extends AppCompatActivity {
         Intent i = new Intent();
 
         // Obtengo referencias a todos los campos
-        EditText etTitulo = findViewById(R.id.etTitulo);
-        EditText etAutor = findViewById(R.id.etAutor);
+        EditText etTitulo = findViewById(R.id.etNombre);
+        EditText etAutor = findViewById(R.id.etDescripcion);
 
 
         try {
             i.putExtra("NOMBRE",  etTitulo.getText());
             i.putExtra("DESCRIPCION", etAutor.getText());
+            i.putExtra("CUENTA", etCuenta.getText());
 
             setResult(RESULT_OK, i);
         } finally {

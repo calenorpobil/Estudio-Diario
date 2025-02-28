@@ -57,4 +57,7 @@
     <string name="bt_ver">Ver</string>
     <string name="bt_revert">🔙</string>
     <string name="bt_copia">☁</string>
+    <string name="btMenos">-</string>
+    <string name="cuenta">Cuenta</string>
+    <string name="descripcion_del_estudio">Descripcion del estudio</string>
 </resources>

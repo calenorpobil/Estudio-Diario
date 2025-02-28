@@ -1,12 +1,9 @@
 package com.merlita.estudiodiario.Ventanas;
 
-import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
@@ -16,14 +13,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.merlita.estudiodiario.R;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
-
 public class AltaActivity extends AppCompatActivity {
-    EditText etTitulo, etAutor;
+    EditText etNombre, etDescripcion, etCuenta;
     Button bt;
     Intent upIntent;
     Spinner spCategoria, spIdioma, spFormato;
@@ -35,10 +26,12 @@ public class AltaActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_alta);
 
-        etTitulo = findViewById(R.id.etTitulo);
-        etTitulo.setHint("Título del libro");
-        etAutor = findViewById(R.id.etAutor);
-        etAutor.setHint("Nombre del autor");
+        etNombre = findViewById(R.id.etNombre);
+        etNombre.setHint("Nombre");
+        etDescripcion = findViewById(R.id.etDescripcion);
+        etDescripcion.setHint("Descripcion");
+        etCuenta = findViewById(R.id.etCuenta);
+        etCuenta.setHint("Veces repetidas");
         bt = findViewById(R.id.btnGuardar);
 
 
@@ -47,34 +40,47 @@ public class AltaActivity extends AppCompatActivity {
 
 
     public void clickVolver(View v){
-        Intent i = new Intent();
 
-        // Obtengo referencias a todos los campos
-        EditText etTitulo = findViewById(R.id.etTitulo);
-        EditText etAutor = findViewById(R.id.etAutor);
+        if(etCuenta.getText().toString()!="" &&
+                etNombre.getText().toString()!="" &&
+                etDescripcion.getText().toString()!="")
+        {
+            Intent i = new Intent();
 
-        // Valido campos obligatorios (según esquema SQL)
-        if (etTitulo.getText().toString().isEmpty() ||
-                etAutor.getText().toString().isEmpty()) {
+            // Obtengo referencias a todos los campos
+            EditText etTitulo = findViewById(R.id.etNombre);
+            EditText etAutor = findViewById(R.id.etDescripcion);
 
-            Toast.makeText(this, "Complete los campos obligatorios (*)", Toast.LENGTH_SHORT).show();
-            /*setResult(RESULT_CANCELED);
-            finish();
-            return;*/
-        }
+            // Valido campos obligatorios (según esquema SQL)
+            if (etTitulo.getText().toString().isEmpty() ||
+                    etAutor.getText().toString().isEmpty()) {
 
-        try {
-            // Convertir fechas a timestamp
+                Toast.makeText(this, "Complete los campos obligatorios (*)", Toast.LENGTH_SHORT).show();
+                /*setResult(RESULT_CANCELED);
+                finish();
+                return;*/
+            }
 
-            // Preparar todos los datos para enviar
-            String nombre = etTitulo.getText().toString();
-            String desc = etAutor.getText().toString();
-            i.putExtra("DESCRIPCION", desc);
-            i.putExtra("NOMBRE", nombre);
+            try {
+                // Convertir fechas a timestamp
 
-            setResult(RESULT_OK, i);
-        } finally {
-            finish();
+                // Preparar todos los datos para enviar
+                String nombre = etTitulo.getText().toString();
+                String desc = etAutor.getText().toString();
+                int cuenta=0;
+                try{
+                    cuenta = Integer.parseInt(etCuenta.getText().toString());
+                }catch (NumberFormatException ignored){
+
+                }
+                i.putExtra("DESCRIPCION", desc);
+                i.putExtra("NOMBRE", nombre);
+                i.putExtra("CUENTA", cuenta);
+
+                setResult(RESULT_OK, i);
+            } finally {
+                finish();
+            }
         }
     }
 

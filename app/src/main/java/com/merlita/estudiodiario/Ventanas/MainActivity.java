@@ -67,7 +67,18 @@ public class MainActivity extends AppCompatActivity implements
     File database = new File(
             Environment.getDataDirectory()+
                     "/data/com.merlita.estudiodiario/databases/"+"DBEstudios");
+    File bk_database = new File(
+            Environment.getDataDirectory()+
+                    "/data/com.merlita.estudiodiario/files/"+"bk_DBEstudios");
+    File database_server = new File(
+            Environment.getDataDirectory()+
+                    "/data/com.merlita.estudiodiario/databases/"+"server_DBEstudios");
+
+
+
     private static final String SERVIDOR_IP = "10.0.2.2";
+    //10.0.2.2      LOCALHOST
+    //172.17.0.1     LINUX
     private static final int PUERTO = 8888;
 
 
@@ -90,7 +101,7 @@ public class MainActivity extends AppCompatActivity implements
         //EdgeToEdge.enable(this);
 
 
-        actualizarDatos();
+
 
 
         tv = findViewById(R.id.tvTitulo);
@@ -103,7 +114,8 @@ public class MainActivity extends AppCompatActivity implements
         vistaRecycler.setLayoutManager(new LinearLayoutManager(this));
         vistaRecycler.setAdapter(adaptadorFilas);
 
-
+        datosDePrueba();
+        actualizarDatos();
 
         btAlta.setOnClickListener(new View.OnClickListener(){
             @Override
@@ -112,9 +124,6 @@ public class MainActivity extends AppCompatActivity implements
 
                 Intent i = new Intent(MainActivity.this, AltaActivity.class);
                 lanzadorAlta.launch(i);
-
-
-
 
                 //sumarNumerosServer();
 
@@ -125,25 +134,31 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onClick(View view) {
                 //Pone archivo en carpeta files.
-                recibirArchivo();
+                //recibirArchivo();
 
                 //Copia el original a la carpeta files (con prefijo bk_)
-                backupLocal();
+                //backupLocal();
 
                 //Copia el database de Files (Servidor) al original.
                 sustituyeSQLite();
 
+
                 actualizarDatos();
-                adaptadorFilas.notifyDataSetChanged();
-
-
-
+                
             }
         });
 
         btCopia.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+
+                try {
+                    copiarArchivo(database, bk_database);
+                    toast("Datos guardados localmente");
+
+                } catch (IOException e) {
+                    toast(e.getMessage());
+                }
                 enviarArchivo();
 
             }
@@ -151,19 +166,17 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void sustituyeSQLite() {
-        File database_server = new File(getFilesDir().toString()+
-                File.separator+"DBEstudios");
         try {
-            copiarArchivo(database_server, database);
-            System.out.println("Backup del servidor finalizada. ");
+            if(database.delete()) {
+                copiarArchivo(bk_database, database);
+                System.out.println("Backup del servidor finalizada. ");
+            }
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
     }
 
     private void backupLocal() {
-        File bk_database = new File(getFilesDir().toString()+
-                File.separator+"bk_DBEstudios");
         try {
             copiarArchivo(database, bk_database);
             toast("Backup local hecha. ");
@@ -177,19 +190,22 @@ public class MainActivity extends AppCompatActivity implements
                     new EstudiosSQLiteHelper(this,
                             "DBEstudios", null, 1);){
             db = usdbh.getWritableDatabase();
-            //db.execSQL("DROP TABLE IF EXISTS bdlibros");
+            //db.execSQL("DROP TABLE IF EXISTS DBEstudios");
 
             //Crear tabla si existe:
             usdbh.onCreate(db);
 
+
             listaEstudios.clear();
-            datosDePrueba();
             rellenarLista();
 
 
 
             db.close();
         }
+        vistaRecycler.setLayoutManager(new LinearLayoutManager(this));
+        vistaRecycler.setAdapter(adaptadorFilas);
+
     }
 
     private void copiarArchivo(File src, File dst) throws IOException {
@@ -343,7 +359,7 @@ public class MainActivity extends AppCompatActivity implements
         numServidor = c.getValue();
         listaEstudios.get(1).setNombre(numServidor+"");
 
-        adaptadorFilas.notifyDataSetChanged();
+        
 
     }
 
@@ -356,17 +372,15 @@ public class MainActivity extends AppCompatActivity implements
 
 
     private void datosDePrueba() {
-        if(db!=null){
-            try{
-                db.execSQL("INSERT INTO ESTUDIO (NOMBRE, DESCRIPCION)" +
-                        "VALUES" +
-                        " ('Tomar Café', 'Registro de consumo diario de café')," +
-                        "('Ir al gimnasio', 'Seguimiento de sesiones de entrenamiento')," +
-                        "('Diario', 'Registro personal diario');");
-            } catch (SQLiteConstraintException e) {
-                Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
-            }
-        }
+        Estudio a = new Estudio("Tomar Cafe", "Registro de consumo diario de café", 3);
+        if(insertarSQL(a)!=-1)
+            listaEstudios.add(a);
+        a= new Estudio("Ir al gimnasio", "Seguimiento de sesiones de entrenamiento", 8);
+        if(insertarSQL(a)!=-1)
+            listaEstudios.add(a);
+        a= new Estudio("Diario", "Registro personal diario", 32);
+        if(insertarSQL(a)!=-1)
+            listaEstudios.add(a);
     }
 
     private void rellenarLista() {
@@ -377,7 +391,9 @@ public class MainActivity extends AppCompatActivity implements
             String nombre = c.getString(index);
             index = c.getColumnIndex("DESCRIPCION");
             String descripcion = c.getString(index);
-            listaEstudios.add(new Estudio(nombre, descripcion));
+            index = c.getColumnIndex("CUENTA");
+            int cuenta = c.getInt(index);
+            listaEstudios.add(new Estudio(nombre, descripcion, cuenta));
         }
         c.close();
     }
@@ -389,29 +405,46 @@ public class MainActivity extends AppCompatActivity implements
     //MENU CONTEXTUAL
     @Override
     public boolean onContextItemSelected(@NonNull MenuItem item){
+        Estudio libro;
         switch(item.getItemId())
         {
             case 121:
                 //MENU --> EDITAR
                 Intent i = new Intent(this, EditActivity.class);
                 posicionEdicion = item.getGroupId();
-                Estudio libro = listaEstudios.get(posicionEdicion);
+                libro = listaEstudios.get(posicionEdicion);
                 i.putExtra("NOMBRE", libro.getNombre());
                 i.putExtra("DESCRIPCION", libro.getDescripcion());
+                i.putExtra("CUENTA", libro.getCuenta());
                 lanzadorEdit.launch(i);
                 return true;
             case 122:
+                posicionEdicion = item.getGroupId();
+                libro = listaEstudios.get(posicionEdicion);
+                if(borrarSQL(libro)!=-1){
+                    listaEstudios.remove(libro);
+                }
+                actualizarDatos();
+                
                 //MENU --> BORRAR
-                listaEstudios.remove(item.getGroupId());
-                adaptadorFilas.notifyDataSetChanged();
                 return true;
             default:
                 return super.onContextItemSelected(item);
         }
     }
 
+    private int borrarSQL(Estudio libro) {
+        int res;
+        try(EstudiosSQLiteHelper usdbh =
+                    new EstudiosSQLiteHelper(this,
+                            "DBEstudios", null, 1);) {
+            db = usdbh.getWritableDatabase();
 
-
+            res = db.delete("Estudio",
+                    "nombre=?", new String[]{libro.getNombre()});
+        }
+        return res;
+    }
 
 
     //RECOGER EDIT ACTIVITY
@@ -427,7 +460,8 @@ public class MainActivity extends AppCompatActivity implements
                         assert data != null;
                         Estudio editLibro = new Estudio(
                                 data.getStringExtra("NOMBRE"),
-                                data.getStringExtra("DESCRIPCION")
+                                data.getStringExtra("DESCRIPCION"),
+                                data.getIntExtra("CUENTA", 0)
                         );
 
                         Estudio antig = listaEstudios.get(posicionEdicion);
@@ -435,7 +469,7 @@ public class MainActivity extends AppCompatActivity implements
                         // Editar el libro
 
                         editarSQL(antig);
-                        adaptadorFilas.notifyDataSetChanged();
+                        
                     }else{
                         //SIN DATOS
                     }
@@ -456,13 +490,16 @@ public class MainActivity extends AppCompatActivity implements
                         assert data != null;
                         String nombre = data.getStringExtra("NOMBRE");
                         String desc = data.getStringExtra("DESCRIPCION");
-                        Estudio nuevoEstudio = new Estudio(nombre, desc);
+                        int cuenta = data.getIntExtra("CUENTA", 0);
+                        Estudio nuevoEstudio = new Estudio(nombre, desc, cuenta);
 
                         // Insertar en BD
                         long fila = insertarSQL(nuevoEstudio);
-                        System.out.println(fila);
-                        listaEstudios.add(nuevoEstudio);
-                        adaptadorFilas.notifyDataSetChanged();
+                        if(fila!=-1){
+                            System.out.println(fila);
+                            listaEstudios.add(nuevoEstudio);
+                            
+                        }
                     }else{
                         //SIN DATOS
                     }
@@ -530,10 +567,11 @@ public class MainActivity extends AppCompatActivity implements
                 db = usdbh.getWritableDatabase();
 
                 datosDePrueba();
+                db.close();
             }
             ver=true;
         }
-        adaptadorFilas.notifyDataSetChanged();
+        
 
     }
 
@@ -553,6 +591,7 @@ public class MainActivity extends AppCompatActivity implements
             ContentValues values = new ContentValues();
             values.put("NOMBRE", libro.getNombre());
             values.put("DESCRIPCION", libro.getDescripcion());
+            values.put("CUENTA", libro.getCuenta());
 
             newRowId = db.insert("Estudio", null, values);
 
@@ -572,9 +611,9 @@ public class MainActivity extends AppCompatActivity implements
 
             // Actualizar usando el ID como condición
             String[] id = {libro.getNombre()};
-            db.update("bdlibros",
+            db.update("Estudio",
                     values,
-                    "_id = ?",
+                    "nombre = ?",
                     id);
 
             db.close();

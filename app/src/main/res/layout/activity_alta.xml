@@ -7,30 +7,12 @@
     android:padding="16dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/constraint"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
         <!-- Categoría -->
-        <TextView
-            android:id="@+id/tvCategoria"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:text="Categoría*"
-            app:layout_constraintBottom_toBottomOf="@+id/spCategoria"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/spCategoria" />
 
-        <Spinner
-            android:id="@+id/spCategoria"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/tvCategoria"
-            app:layout_constraintTop_toTopOf="parent" />
 
         <!-- Título -->
         <TextView
@@ -39,12 +21,12 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:text="Título*"
-            app:layout_constraintBottom_toBottomOf="@+id/etTitulo"
+            app:layout_constraintBottom_toBottomOf="@+id/etNombre"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/etTitulo" />
+            app:layout_constraintTop_toTopOf="@+id/etNombre" />
 
         <EditText
-            android:id="@+id/etTitulo"
+            android:id="@+id/etNombre"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
@@ -58,17 +40,17 @@
 
         <!-- Autor -->
         <TextView
-            android:id="@+id/tvAutor"
+            android:id="@+id/tvDescripcion"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:text="Autor*"
-            app:layout_constraintBottom_toBottomOf="@+id/etAutor"
+            android:text="@string/descripcion_del_estudio"
+            app:layout_constraintBottom_toBottomOf="@+id/etDescripcion"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/etAutor" />
+            app:layout_constraintTop_toTopOf="@+id/etDescripcion" />
 
         <EditText
-            android:id="@+id/etAutor"
+            android:id="@+id/etDescripcion"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
@@ -76,210 +58,48 @@
             android:layout_marginEnd="16dp"
             android:ems="10"
             android:inputType="textPersonName"
+            app:layout_constraintBottom_toTopOf="@+id/etDescripcion"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/tvAutor"
-            app:layout_constraintTop_toBottomOf="@+id/etTitulo" />
+            app:layout_constraintStart_toEndOf="@+id/tvDescripcion"
+            app:layout_constraintTop_toBottomOf="@+id/etNombre" />
 
-        <!-- Idioma -->
+        <!-- CUENTA -->
         <TextView
-            android:id="@+id/tvIdioma"
+            android:id="@+id/tvCuenta"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:text="Idioma"
-            app:layout_constraintBottom_toBottomOf="@+id/spIdioma"
+            android:text="@string/cuenta"
+            app:layout_constraintBottom_toBottomOf="@+id/etCuenta"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/spIdioma" />
-
-        <Spinner
-            android:id="@+id/spIdioma"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/tvIdioma"
-            app:layout_constraintTop_toBottomOf="@+id/etAutor" />
-
-        <!-- Fecha Lectura Inicio -->
-        <TextView
-            android:id="@+id/tvFechaInicio"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:text="Fecha Inicio"
-            app:layout_constraintBottom_toBottomOf="@+id/etFechaInicio"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/etFechaInicio" />
+            app:layout_constraintTop_toTopOf="@+id/etCuenta" />
 
         <EditText
-            android:id="@+id/etFechaInicio"
+            android:id="@+id/etCuenta"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_marginTop="16dp"
             android:layout_marginEnd="16dp"
-            android:clickable="true"
-            android:focusable="false"
-            android:hint="Seleccionar fecha"
-            android:inputType="date"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/tvFechaInicio"
-            app:layout_constraintTop_toBottomOf="@+id/spIdioma" />
-
-        <!-- Fecha Lectura Fin -->
-        <TextView
-            android:id="@+id/tvFechaFin"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:text="Fecha Fin"
-            app:layout_constraintBottom_toBottomOf="@+id/etFechaFin"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/etFechaFin" />
-
-        <EditText
-            android:id="@+id/etFechaFin"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            android:clickable="true"
-            android:focusable="false"
-            android:hint="Seleccionar fecha"
-            android:inputType="date"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/tvFechaFin"
-            app:layout_constraintTop_toBottomOf="@+id/etFechaInicio" />
-
-        <!-- Prestado a -->
-        <TextView
-            android:id="@+id/tvPrestado"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:text="Prestado a"
-            app:layout_constraintBottom_toBottomOf="@+id/etPrestado"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/etPrestado" />
-
-        <EditText
-            android:id="@+id/etPrestado"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="24dp"
             android:ems="10"
-            android:inputType="textPersonName"
+            android:inputType="number"
+            app:layout_constraintBottom_toTopOf="@+id/btnGuardar"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/tvPrestado"
-            app:layout_constraintTop_toBottomOf="@+id/etFechaFin" />
+            app:layout_constraintStart_toEndOf="@+id/tvDescripcion"
+            app:layout_constraintTop_toBottomOf="@+id/etDescripcion" />
 
-        <!-- Valoración -->
-        <TextView
-            android:id="@+id/tvValoracion"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:text="Valoración"
-            app:layout_constraintBottom_toBottomOf="@+id/etValoracion"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/etValoracion" />
-
-        <EditText
-            android:id="@+id/etValoracion"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            android:ems="10"
-            android:hint="0.0 - 5.0"
-            android:inputType="numberDecimal"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/tvValoracion"
-            app:layout_constraintTop_toBottomOf="@+id/etPrestado" />
-
-        <!-- Formato -->
-        <TextView
-            android:id="@+id/tvFormato"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:text="Formato"
-            app:layout_constraintBottom_toBottomOf="@+id/spFormato"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/spFormato" />
-
-        <Spinner
-            android:id="@+id/spFormato"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/tvFormato"
-            app:layout_constraintTop_toBottomOf="@+id/etValoracion" />
-
-        <!-- Notas -->
-        <TextView
-            android:id="@+id/tvNotas"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:text="Notas"
-            app:layout_constraintBottom_toBottomOf="@+id/etNotas"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/etNotas" />
-
-        <EditText
-            android:id="@+id/etNotas"
-            android:layout_width="0dp"
-            android:layout_height="100dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            android:gravity="start|top"
-            android:inputType="textMultiLine"
-            android:lines="5"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/tvNotas"
-            app:layout_constraintTop_toBottomOf="@+id/spFormato" />
 
         <!-- Finalizado -->
-        <TextView
-            android:id="@+id/tvFinalizado"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:text="Finalizado"
-            app:layout_constraintBottom_toBottomOf="@+id/cbFinalizado"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/cbFinalizado" />
-
-        <CheckBox
-            android:id="@+id/cbFinalizado"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginEnd="16dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/tvFinalizado"
-            app:layout_constraintTop_toBottomOf="@+id/etNotas" />
 
         <!-- Botón Guardar -->
         <Button
             android:id="@+id/btnGuardar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
             android:onClick="clickVolver"
             android:text="Guardar Libro"
-            app:layout_constraintTop_toBottomOf="@+id/cbFinalizado" />
+            app:layout_constraintBottom_toBottomOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

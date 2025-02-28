@@ -11,9 +11,9 @@ public class EstudiosSQLiteHelper extends SQLiteOpenHelper {
 
     //Sentencia SQL para crear la tabla de Usuarios
     String sqlCreate = "CREATE TABLE IF NOT EXISTS ESTUDIO(" +
-            "NOMBRE VARCHAR(50) PRIMARY KEY," +
-            "DESCRIPCION VARCHAR(9)" +
-            ");";
+            "NOMBRE VARCHAR(50) PRIMARY KEY UNIQUE," +
+            "DESCRIPCION VARCHAR(9), " +
+            "CUENTA INTEGER);";
 
     public EstudiosSQLiteHelper(Context contexto, String nombre,
                                 CursorFactory factory, int version) {
@@ -27,15 +27,6 @@ public class EstudiosSQLiteHelper extends SQLiteOpenHelper {
 
         db.execSQL(sqlCreate);
     }
-
-
-
-
-
-
-
-
-
 
 
     @Override
