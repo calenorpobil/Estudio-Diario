@@ -5,8 +5,11 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -24,6 +27,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.merlita.estudiodiario.AdaptadorFilas;
+import com.merlita.estudiodiario.FileUsageChecker;
 import com.merlita.estudiodiario.HilosCliente.SumaNumero;
 import com.merlita.estudiodiario.DialogoMenu;
 import com.merlita.estudiodiario.DialogoOrdenar;
@@ -43,8 +47,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.RandomAccessFile;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements
@@ -59,6 +67,9 @@ public class MainActivity extends AppCompatActivity implements
     int posicionEdicion;
     boolean ver=true;
     int numServidor=1;
+
+    ResultCallbackEnviar callbackEnviarServer;
+    ResultCallbackRecibir callbackRecibirServer;
 
     File database = new File(
             Environment.getDataDirectory()+
@@ -108,7 +119,7 @@ public class MainActivity extends AppCompatActivity implements
         vistaRecycler.setLayoutManager(new LinearLayoutManager(this));
         vistaRecycler.setAdapter(adaptadorFilas);
 
-        //datosDePrueba();
+        datosDePrueba();
         actualizarDatos();
 
 
@@ -129,14 +140,11 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onClick(View view) {
                 //Pone archivo en carpeta files.
-                //recibirArchivo();
+                recibirArchivo();
 
-                //Copia el original a la carpeta files (con prefijo bk_)
-                //backupLocal();
 
                 //Copia el database de Files (Servidor) al original.
                 sustituyeSQLite();
-
 
                 actualizarDatos();
                 
@@ -147,36 +155,35 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onClick(View view) {
 
-                try {
-                    copiarArchivo(database, bk_database);
-                    toast("Datos guardados localmente");
+                enviarArchivoNube();
 
-                } catch (IOException e) {
-                    toast(e.getMessage());
-                }
-                enviarArchivo();
 
             }
         });
     }
 
     private void sustituyeSQLite() {
-        try {
-            if(database.delete()) {
-                copiarArchivo(bk_database, database);
-                System.out.println("Backup del servidor finalizada. ");
+        if(!FileUsageChecker.estaEnUso(database.toString())){
+            try {
+                if (database.delete()) {
+                    backupLocalCopiar(database_server, database);
+                    System.out.println("Backup del servidor finalizada. ");
+                }
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
             }
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
+        }else{
+            toast("La base de dato está en uso. Inténtalo más tarde. ");
         }
+
     }
 
-    private void backupLocal() {
+    private void backupLocalCopiar() {
         try {
-            copiarArchivo(database, bk_database);
+            backupLocalCopiar(database, bk_database);
             toast("Backup local hecha. ");
         } catch (IOException e) {
-            toast(e.getMessage());
+            toast("No se ha podido hacer la backup local. Vuelve a intentarlo. ");
         }
     }
 
@@ -185,6 +192,7 @@ public class MainActivity extends AppCompatActivity implements
                     new EstudiosSQLiteHelper(this,
                             "DBEstudios", null, 1);){
             db = usdbh.getWritableDatabase();
+
             //db.execSQL("DROP TABLE IF EXISTS DBEstudios");
 
             //Crear tabla si existe:
@@ -192,6 +200,7 @@ public class MainActivity extends AppCompatActivity implements
 
 
             listaEstudios.clear();
+
             rellenarLista();
 
             db.close();
@@ -201,7 +210,7 @@ public class MainActivity extends AppCompatActivity implements
 
     }
 
-    private void copiarArchivo(File src, File dst) throws IOException {
+    private void backupLocalCopiar(File src, File dst) throws IOException {
         InputStream in = new FileInputStream(src);
         try {
             OutputStream out = new FileOutputStream(dst);
@@ -221,100 +230,155 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void recibirArchivo() {
+        new Thread(recibirServer).start();
 
-        File rutaRaiz = getFilesDir();
-
-        new Thread(new Runnable() {
-            public void run() {
-                File archivoDestino;
-                try (Socket socket = new Socket(SERVIDOR_IP, PUERTO);
-                     DataOutputStream outStream = new DataOutputStream(socket.getOutputStream());
-                     //Sirve para crear un fichero en el Servidor (?):
-                     PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-                ) {
-                    socket.setSoTimeout(5000);
-                    //DIGO AL SERVER QUE QUIERO RECIBIR ARCHIVO
-                    outStream.writeUTF("RECIBIR");
-
-                    System.out.println("Recibir dicho. ");
-
-                    // Solicitar archivo "DBEstudios"
-                    outStream.writeUTF("DBEstudios");
-
-
-                    try (DataInputStream inStream = new DataInputStream(socket.getInputStream())) {
-                        // Recibir metadatos
-                        String nombreArchivo = inStream.readUTF();
-                        long tamanyoArchivo = inStream.readLong();
-
-                        // Prepara el archivo de destino (cliente)
-                        archivoDestino = new File(rutaRaiz + File.separator + nombreArchivo);
-
-                        if (!archivoDestino.exists()) {
-                            try {
-                                archivoDestino.createNewFile();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                        try (FileOutputStream fos = new FileOutputStream(archivoDestino);
-                             BufferedOutputStream bos = new BufferedOutputStream(fos)) {
-
-
-                            // Recibir y guardar el archivo por bloques de 4KB
-                            byte[] buffer = new byte[4096];
-                            int count;
-                            long totalRecibido = 0;
-                            while (totalRecibido < tamanyoArchivo && (count = inStream.read(buffer)) != -1) {
-                                bos.write(buffer, 0, count);
-                                totalRecibido += count;
-                            }
-
-                            System.out.println("Archivo recibido: " + nombreArchivo);
-                            File nuevaDatabase = new File(
-                                    Environment.getDataDirectory()+
-                                            "/data/com.merlita.estudiodiario/databases/"+"DBEstudios1");
-                            nuevaDatabase = archivoDestino;
-
-
-                        }
-                    }
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-
+        // Comprobar Resultado
+        callbackRecibirServer = new ResultCallbackRecibir() {
+            @Override
+            public void onSuccess() {
+                // Actualizar UI o lógica post-éxito
+                runOnUiThread(() -> {
+                    toast("Se restauraron los datos de la nube. ");
+                });
             }
-        }).start();
+
+            @Override
+            public void onFailure(Exception e) {
+                // Manejar error
+                runOnUiThread(() -> {
+                    toast(e.getMessage());
+                    try {
+                        backupLocalCopiar(bk_database, database);
+                    } catch (IOException ex) {
+                        toast("Copia local incorrecta. ");
+                    }
+                });
+            }
+        };
+
 
 
 
 
     }
-    private void enviarArchivo() {
+
+    Runnable recibirServer = new Runnable() {
+        public void run() {
+            File archivoDestino;
+            try (Socket socket = new Socket();) {
+                socket.connect(new InetSocketAddress(SERVIDOR_IP, PUERTO), 1000);
+                DataOutputStream outStream = new DataOutputStream(socket.getOutputStream());
+
+                //DIGO AL SERVER QUE QUIERO RECIBIR ARCHIVO
+                outStream.writeUTF("RECIBIR");
+
+                System.out.println("Recibir dicho. ");
+
+                // Solicitar archivo "DBEstudios"
+                outStream.writeUTF("DBEstudios");
+
+
+                try (DataInputStream inStream = new DataInputStream(socket.getInputStream())) {
+                    // Recibir metadatos
+                    String nombreArchivo = inStream.readUTF();
+                    long tamanyoArchivo = inStream.readLong();
+
+                    // Prepara el archivo de destino (cliente)
+                    archivoDestino = database_server;
+
+                    if (!archivoDestino.exists()) {
+                        try {
+                            archivoDestino.createNewFile();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    //GUARDAR ARCHIVO
+                    try (FileOutputStream fos = new FileOutputStream(database_server);
+                         BufferedOutputStream bos = new BufferedOutputStream(fos)) {
+
+
+                        // Recibir y guardar el archivo por bloques de 4KB
+                        byte[] buffer = new byte[4096];
+                        int count;
+                        long totalRecibido = 0;
+                        while (totalRecibido < tamanyoArchivo && (count = inStream.read(buffer)) != -1) {
+                            bos.write(buffer, 0, count);
+                            totalRecibido += count;
+                        }
+
+                        System.out.println("Archivo recibido: " + nombreArchivo);
+                    }
+                    // Notificar éxito
+                    if (callbackRecibirServer != null) {
+                        new Handler(Looper.getMainLooper()).post(() -> callbackRecibirServer.onSuccess());
+                    }
+                }
+            } catch (IOException e) {
+                if (callbackRecibirServer != null) {
+                    new Handler(Looper.getMainLooper()).post(() -> callbackRecibirServer.onFailure(e));
+                }
+            }
+
+        }
+    };
+    private void enviarArchivoNube() {
         //ARCHIVO SQLITE:
-        File mensaje = database;
 
-        new Thread(new Runnable() {
-            public void run() {
-                // A potentially time consuming task.
+        new Thread(llamadaANube).start();
+
+        // Comprobar Resultado
+        callbackEnviarServer = new ResultCallbackEnviar() {
+            @Override
+            public void onSuccess() {
+                // Actualizar UI o lógica post-éxito
+                runOnUiThread(() -> {
+                    toast("Se guardó el mensaje en la nube. ");
+                });
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                // Manejar error
+                runOnUiThread(() -> {
+                    toast("La copia en el servidor no funcionó. Se hará una backup local. ");
+                    backupLocalCopiar();
+                });
+            }
+        };
 
 
-                int respuesta = 0;
+
+    }
+
+
+    public interface ResultCallbackEnviar {
+        void onSuccess();
+        void onFailure(Exception e);
+    }
+    public interface ResultCallbackRecibir {
+        void onSuccess();
+        void onFailure(Exception e);
+    }
+
+    Runnable llamadaANube = new Runnable() {
+        @Override
+        public void run() {
+            try {
                 final int BUFFER_SIZE = 4096; // 4 KB
 
-                try (Socket socket = new Socket(SERVIDOR_IP, PUERTO);
-                     DataOutputStream outStream = new DataOutputStream(socket.getOutputStream());
-                     FileInputStream fis = new FileInputStream(mensaje);
-                     BufferedInputStream inStream = new BufferedInputStream(fis)) {
-                    socket.setSoTimeout(5000);
+                try (Socket socket = new Socket()) {
+                    FileInputStream fis = new FileInputStream(database);
+                    BufferedInputStream inStream = new BufferedInputStream(fis);
                     //ENVIAR ARCHIVO
+                    socket.connect(new InetSocketAddress(SERVIDOR_IP, PUERTO), 1000);
+                    DataOutputStream outStream = new DataOutputStream(socket.getOutputStream());
                     outStream.writeUTF("ENVIAR");
 
 
-
                     // Enviar metadatos: nombre y tamaño
-                    outStream.writeUTF(mensaje.getName()); // Nombre del archivo
-                    outStream.writeLong(mensaje.length()); // Tamaño en bytes
+                    outStream.writeUTF(database.getName()); // Nombre del archivo
+                    outStream.writeLong(database.length()); // Tamaño en bytes
 
                     // Enviar archivo
                     byte[] buffer = new byte[BUFFER_SIZE];
@@ -323,39 +387,36 @@ public class MainActivity extends AppCompatActivity implements
                         outStream.write(buffer, 0, count);
                     }
 
-                    System.out.println("Archivo enviado: " + mensaje.getName());
-                    respuesta = 1;
+                    System.out.println("Archivo enviado: " + database.getName());
+                    // Notificar éxito
+                    if (callbackEnviarServer != null) {
+                        new Handler(Looper.getMainLooper()).post(() -> callbackEnviarServer.onSuccess());
+                    }
 
-                } catch (UnknownHostException e) {
+
+                } catch(java.net.SocketException ex) {
+                    if (callbackEnviarServer != null) {
+                        new Handler(Looper.getMainLooper()).post(() -> callbackEnviarServer.onFailure(ex));
+                    }
+                }catch (UnknownHostException e) {
                     System.err.println("Host desconocido: " + SERVIDOR_IP);
+                    if (callbackEnviarServer != null) {
+                        new Handler(Looper.getMainLooper()).post(() -> callbackEnviarServer.onFailure(e));
+                    }
                 } catch (IOException e) {
                     System.err.println("Error de E/S: " + e.getMessage());
+                    if (callbackEnviarServer != null) {
+                        new Handler(Looper.getMainLooper()).post(() -> callbackEnviarServer.onFailure(e));
+                    }
+                }
+            } catch (Exception e) {
+                //NOTIFICAR ERROR
+                if (callbackEnviarServer != null) {
+                    new Handler(Looper.getMainLooper()).post(() -> callbackEnviarServer.onFailure(e));
                 }
             }
-        }).start();
-
-    }
-
-    private void sumarNumerosServer() {
-        toast("juan");
-
-        SumaNumero c = new SumaNumero("Hilo", numServidor);
-
-        Thread thread = new Thread(c);
-
-        thread.start();
-        try {
-            thread.join();
-        } catch (InterruptedException e) {
-            toast(e.getMessage());
         }
-        numServidor = c.getValue();
-        listaEstudios.get(1).setNombre(numServidor+"");
-
-        
-
-    }
-
+    };
 
     private void mostrarFormularioAlta()  {
         Intent i = new Intent(MainActivity.this, AltaActivity.class);
@@ -433,6 +494,7 @@ public class MainActivity extends AppCompatActivity implements
                             "DBEstudios", null, 1);) {
             db = usdbh.getWritableDatabase();
 
+
             res = db.delete("Estudio",
                     "nombre=?", new String[]{libro.getNombre()});
         }
@@ -495,8 +557,8 @@ public class MainActivity extends AppCompatActivity implements
                         if(fila!=-1){
                             System.out.println(fila);
                             listaEstudios.add(nuevoEstudio);
-                            
                         }
+                        actualizarDatos();
                     }else{
                         //SIN DATOS
                     }

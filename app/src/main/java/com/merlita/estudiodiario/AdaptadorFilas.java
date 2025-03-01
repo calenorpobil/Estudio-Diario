@@ -61,31 +61,26 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
         holder.btEmoji.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                int adapterPosition = holder.getAdapterPosition();
-                if (adapterPosition != RecyclerView.NO_POSITION) {
-                    Estudio estudioActual = lista.get(adapterPosition);
-                    estudioActual.setCuenta(estudioActual.getCuenta() + 1);
-                    holder.tvCuenta.setText(String.valueOf(estudioActual.getCuenta()));
-                }
-                if(editarSQL(estudioFila)!=-1){
-                    if (listener != null && holder.getAdapterPosition() != RecyclerView.NO_POSITION) {
-                        listener.onButtonClick(holder.getAdapterPosition());
-                    }
+                Estudio actual = lista.get(position);
+                int cuenta = actual.getCuenta();
+
+                cuenta--;
+                holder.tvCuenta.setText(cuenta+"");
+                if(editarSQL(actual)!=-1) {
+                    actual.setCuenta(cuenta);
                 }
             }
         });
         holder.btMas.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                int cuenta = estudioFila.getCuenta();
+                Estudio actual = lista.get(position);
+                int cuenta = actual.getCuenta();
 
                 cuenta++;
                 holder.tvCuenta.setText(cuenta+"");
-                estudioFila.setCuenta(cuenta);
-                if(editarSQL(estudioFila)!=-1) {
-                    if (listener != null && holder.getAdapterPosition() != RecyclerView.NO_POSITION) {
-                        listener.onButtonClick(holder.getAdapterPosition());
-                    }
+                if(editarSQL(actual)!=-1) {
+                    actual.setCuenta(cuenta);
                 }
             }
         });
@@ -145,6 +140,7 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
                             "DBEstudios", null, 1);){
             db = usdbh.getWritableDatabase();
 
+
             ContentValues values = new ContentValues();
             values.put("NOMBRE", nuevo.getNombre());
             values.put("DESCRIPCION", nuevo.getDescripcion());
@@ -157,7 +153,6 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
                     "nombre = ?",
                     id);
 
-            db.close();
         }
         return res;
     }
@@ -177,7 +172,6 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
     public AdaptadorFilas(@NonNull Context context) {
         super();
     }
-
 
 
 }
