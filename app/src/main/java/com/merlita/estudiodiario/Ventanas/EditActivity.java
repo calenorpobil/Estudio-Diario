@@ -42,7 +42,7 @@ public class EditActivity extends AppCompatActivity {
 
         String nombre = upIntent.getString("NOMBRE");
         String desc = upIntent.getString("DESCRIPCION");
-        String cuenta = upIntent.getString("CUENTA");
+        int cuenta = upIntent.getInt("CUENTA");
         etTitulo = findViewById(R.id.etNombre);
         etAutor = findViewById(R.id.etDescripcion);
         etCuenta = findViewById(R.id.etCuenta);
@@ -50,7 +50,8 @@ public class EditActivity extends AppCompatActivity {
 // Poblar campos de texto
         etTitulo.setText(nombre);
         etAutor.setText(desc);
-        etCuenta.setText(cuenta);
+        if(cuenta!=0)
+            etCuenta.setText(cuenta+"");
 
     }
 
@@ -58,14 +59,16 @@ public class EditActivity extends AppCompatActivity {
         Intent i = new Intent();
 
         // Obtengo referencias a todos los campos
-        EditText etTitulo = findViewById(R.id.etNombre);
-        EditText etAutor = findViewById(R.id.etDescripcion);
 
-
+        String nombre = etTitulo.getText().toString();
+        String desc = etAutor.getText().toString();
+        int cuenta=-1;
+        if(etCuenta.getText().toString()!="")
+            cuenta = Integer.parseInt(etCuenta.getText().toString());
         try {
-            i.putExtra("NOMBRE",  etTitulo.getText());
-            i.putExtra("DESCRIPCION", etAutor.getText());
-            i.putExtra("CUENTA", etCuenta.getText());
+            i.putExtra("NOMBRE",  nombre);
+            i.putExtra("DESCRIPCION", desc);
+            i.putExtra("CUENTA", cuenta);
 
             setResult(RESULT_OK, i);
         } finally {

@@ -1,6 +1,8 @@
 package com.merlita.estudiodiario;
 
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,22 +14,29 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.merlita.estudiodiario.Modelos.Estudio;
+import com.merlita.estudiodiario.Ventanas.MainActivity;
 
 import java.util.ArrayList;
 
 public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiContenedor> {
+
     private Context context;
     private ArrayList<Estudio> lista;
     private boolean viendoDatosPrueba=true;
-    private OnButtonClickListener listener;
-
-    int cuenta = 0;
-
     public interface OnButtonClickListener {
-        void onEditClick(int position);
-        void onDeleteClick(int position);
-        void onShareClick(int position);
+        void onButtonClick(int position);
     }
+
+    private OnButtonClickListener listener;
+    Estudio estudioFila;
+
+
+
+
+    SQLiteDatabase db;
+
+
+
 
 
     @NonNull
@@ -48,13 +57,47 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
         holder.tvAutor.setText(estudio.getDescripcion());
         holder.tvCuenta.setText(estudio.getCuenta()+"");
 
+
+        holder.btEmoji.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                int adapterPosition = holder.getAdapterPosition();
+                if (adapterPosition != RecyclerView.NO_POSITION) {
+                    Estudio estudioActual = lista.get(adapterPosition);
+                    estudioActual.setCuenta(estudioActual.getCuenta() + 1);
+                    holder.tvCuenta.setText(String.valueOf(estudioActual.getCuenta()));
+                }
+                if(editarSQL(estudioFila)!=-1){
+                    if (listener != null && holder.getAdapterPosition() != RecyclerView.NO_POSITION) {
+                        listener.onButtonClick(holder.getAdapterPosition());
+                    }
+                }
+            }
+        });
+        holder.btMas.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                int cuenta = estudioFila.getCuenta();
+
+                cuenta++;
+                holder.tvCuenta.setText(cuenta+"");
+                estudioFila.setCuenta(cuenta);
+                if(editarSQL(estudioFila)!=-1) {
+                    if (listener != null && holder.getAdapterPosition() != RecyclerView.NO_POSITION) {
+                        listener.onButtonClick(holder.getAdapterPosition());
+                    }
+                }
+            }
+        });
+
     }
 
 
-    public AdaptadorFilas(Context context, ArrayList<Estudio> lista) {
+    public AdaptadorFilas(Context context, ArrayList<Estudio> lista, OnButtonClickListener listener) {
         super();
         this.context = context;
         this.lista = lista;
+        this.listener = listener;
     }
 
     @Override
@@ -73,6 +116,7 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
         public MiContenedor(@NonNull View itemView) {
             super(itemView);
 
+
             tvTitulo = (TextView) itemView.findViewById(R.id.tvTitulo);
             tvAutor = (TextView) itemView.findViewById(R.id.tvDescripcion);
             tvCuenta = (TextView) itemView.findViewById(R.id.tvCuenta);
@@ -80,20 +124,6 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
             btMas = (Button) itemView.findViewById(R.id.btMas);
             itemView.setOnCreateContextMenuListener(this);
 
-            btEmoji.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    cuenta--;
-                    tvCuenta.setText(cuenta+"");
-                }
-            });
-            btMas.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    cuenta++;
-                    tvCuenta.setText(cuenta+"");
-                }
-            });
         }
 
         @Override
@@ -104,6 +134,34 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
             contextMenu.add(getAdapterPosition(), 122, 1, "BORRAR");
         }
     }
+
+
+
+
+    private int editarSQL(Estudio nuevo){
+        int res=-1;
+        try(EstudiosSQLiteHelper usdbh =
+                    new EstudiosSQLiteHelper(this.context,
+                            "DBEstudios", null, 1);){
+            db = usdbh.getWritableDatabase();
+
+            ContentValues values = new ContentValues();
+            values.put("NOMBRE", nuevo.getNombre());
+            values.put("DESCRIPCION", nuevo.getDescripcion());
+            values.put("CUENTA", nuevo.getCuenta());
+
+            // Actualizar usando el ID como condición
+            String[] id = {nuevo.getNombre()};
+            res=db.update("Estudio",
+                    values,
+                    "nombre = ?",
+                    id);
+
+            db.close();
+        }
+        return res;
+    }
+
 
     public void filtrarLista() {
         if(viendoDatosPrueba){

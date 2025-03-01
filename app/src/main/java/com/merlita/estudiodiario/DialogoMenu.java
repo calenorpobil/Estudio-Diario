@@ -19,6 +19,7 @@ public class DialogoMenu extends DialogFragment {
         void onImportarClick();
         void onExportarClick();
         void onVerDatosPrueba();
+
     }
 
     private CustomDialogListener listener;

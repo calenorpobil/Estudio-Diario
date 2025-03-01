@@ -24,8 +24,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.merlita.estudiodiario.AdaptadorFilas;
-import com.merlita.estudiodiario.HilosCliente.EnviaArchivo;
-import com.merlita.estudiodiario.HilosCliente.RecibeArchivo;
 import com.merlita.estudiodiario.HilosCliente.SumaNumero;
 import com.merlita.estudiodiario.DialogoMenu;
 import com.merlita.estudiodiario.DialogoOrdenar;
@@ -47,12 +45,10 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements
-        DialogoMenu.CustomDialogListener {
+        DialogoMenu.CustomDialogListener, AdaptadorFilas.OnButtonClickListener {
 
     RecyclerView vistaRecycler;
     ArrayList<Estudio> listaEstudios = new ArrayList<Estudio>();
@@ -81,11 +77,8 @@ public class MainActivity extends AppCompatActivity implements
     //172.17.0.1     LINUX
     private static final int PUERTO = 8888;
 
-
-
     SQLiteDatabase db;
 
-    Intent resultado = null;
 
     private void toast(String e) {
         if(e!=null){
@@ -109,13 +102,15 @@ public class MainActivity extends AppCompatActivity implements
         btCopia = findViewById(R.id.btCopia);
         btRevert = findViewById(R.id.btRevert);
         vistaRecycler = findViewById(R.id.recyclerView);
-        adaptadorFilas = new AdaptadorFilas(this, listaEstudios);
+        adaptadorFilas = new AdaptadorFilas(this, listaEstudios, this);
+
 
         vistaRecycler.setLayoutManager(new LinearLayoutManager(this));
         vistaRecycler.setAdapter(adaptadorFilas);
 
-        datosDePrueba();
+        //datosDePrueba();
         actualizarDatos();
+
 
         btAlta.setOnClickListener(new View.OnClickListener(){
             @Override
@@ -185,7 +180,7 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    private void actualizarDatos() {
+    public void actualizarDatos() {
         try(EstudiosSQLiteHelper usdbh =
                     new EstudiosSQLiteHelper(this,
                             "DBEstudios", null, 1);){
@@ -198,8 +193,6 @@ public class MainActivity extends AppCompatActivity implements
 
             listaEstudios.clear();
             rellenarLista();
-
-
 
             db.close();
         }
@@ -465,11 +458,15 @@ public class MainActivity extends AppCompatActivity implements
                         );
 
                         Estudio antig = listaEstudios.get(posicionEdicion);
-                        listaEstudios.set(listaEstudios.indexOf(antig), editLibro);
                         // Editar el libro
 
-                        editarSQL(antig);
-                        
+                        int insertado = editarSQL(antig, editLibro);
+                        if(insertado != -1){
+                            listaEstudios.set(listaEstudios.indexOf(antig), editLibro);
+                        }
+
+                        actualizarDatos();
+
                     }else{
                         //SIN DATOS
                     }
@@ -599,25 +596,30 @@ public class MainActivity extends AppCompatActivity implements
         }
         return newRowId;
     }
-    private void editarSQL(Estudio libro){
+    private int editarSQL(Estudio antiguo, Estudio nuevo){
+        int res=-1;
         try(EstudiosSQLiteHelper usdbh =
                     new EstudiosSQLiteHelper(this,
                             "DBEstudios", null, 1);){
             db = usdbh.getWritableDatabase();
 
             ContentValues values = new ContentValues();
-            values.put("NOMBRE", libro.getNombre());
-            values.put("DESCRIPCION", libro.getDescripcion());
+            values.put("NOMBRE", nuevo.getNombre());
+            values.put("DESCRIPCION", nuevo.getDescripcion());
+            values.put("CUENTA", nuevo.getCuenta());
 
             // Actualizar usando el ID como condición
-            String[] id = {libro.getNombre()};
-            db.update("Estudio",
+            String[] id = {antiguo.getNombre()};
+            res=db.update("Estudio",
                     values,
                     "nombre = ?",
                     id);
 
             db.close();
+        } catch (SQLiteConstraintException ex){
+            toast(ex.getMessage());
         }
+        return res;
     }
 
 
@@ -626,5 +628,13 @@ public class MainActivity extends AppCompatActivity implements
         DialogoOrdenar dialog = new DialogoOrdenar();
         dialog.show(getSupportFragmentManager(), "DialogoOrdenar");
     }
+
+    @Override
+    public void onButtonClick(int position) {
+        // Lógica de actualización (ejemplo: modificar el elemento)
+        actualizarDatos();
+    }
+
+
 
 }
