@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -28,7 +27,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.merlita.estudiodiario.AdaptadorFilas;
 import com.merlita.estudiodiario.FileUsageChecker;
-import com.merlita.estudiodiario.HilosCliente.SumaNumero;
 import com.merlita.estudiodiario.DialogoMenu;
 import com.merlita.estudiodiario.DialogoOrdenar;
 import com.merlita.estudiodiario.EstudiosSQLiteHelper;
@@ -46,26 +44,25 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements
-        DialogoMenu.CustomDialogListener, AdaptadorFilas.OnButtonClickListener {
+        DialogoMenu.CustomDialogListener, AdaptadorFilas.OnButtonClickListener,
+        AdaptadorFilas.UsandoBBDD{
 
     RecyclerView vistaRecycler;
     ArrayList<Estudio> listaEstudios = new ArrayList<Estudio>();
     TextView tv;
     AdaptadorFilas adaptadorFilas;
+    AdaptadorFilas.UsandoBBDD usandoBBDD;
     Button btAlta, btCopia, btRevert;
     EditText et;
     int posicionEdicion;
     boolean ver=true;
+    boolean isRecibiendo =false, isEnviando = false;
     int numServidor=1;
 
     ResultCallbackEnviar callbackEnviarServer;
@@ -88,7 +85,6 @@ public class MainActivity extends AppCompatActivity implements
     //172.17.0.1     LINUX
     private static final int PUERTO = 8888;
 
-    SQLiteDatabase db;
 
 
     private void toast(String e) {
@@ -113,13 +109,13 @@ public class MainActivity extends AppCompatActivity implements
         btCopia = findViewById(R.id.btCopia);
         btRevert = findViewById(R.id.btRevert);
         vistaRecycler = findViewById(R.id.recyclerView);
-        adaptadorFilas = new AdaptadorFilas(this, listaEstudios, this);
+        adaptadorFilas = new AdaptadorFilas(this, listaEstudios, this, usandoBBDD);
 
 
         vistaRecycler.setLayoutManager(new LinearLayoutManager(this));
         vistaRecycler.setAdapter(adaptadorFilas);
 
-        datosDePrueba();
+        //datosDePrueba();
         actualizarDatos();
 
 
@@ -140,14 +136,17 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onClick(View view) {
                 //Pone archivo en carpeta files.
-                recibirArchivo();
+                if(!isRecibiendo){
+                    isRecibiendo =true;
+                    recibirArchivo();
 
 
-                //Copia el database de Files (Servidor) al original.
-                sustituyeSQLite();
+                    //Copia el database de Files (Servidor) al original.
 
-                actualizarDatos();
-                
+                    actualizarDatos();
+                    isRecibiendo =false;
+                }
+
             }
         });
 
@@ -155,7 +154,11 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onClick(View view) {
 
-                enviarArchivoNube();
+                if(!isEnviando){
+                    isEnviando = true;
+                    enviarArchivoNube();
+                    isEnviando= false;
+                }
 
 
             }
@@ -166,7 +169,7 @@ public class MainActivity extends AppCompatActivity implements
         if(!FileUsageChecker.estaEnUso(database.toString())){
             try {
                 if (database.delete()) {
-                    backupLocalCopiar(database_server, database);
+                    copiarArchivo(database_server, database);
                     System.out.println("Backup del servidor finalizada. ");
                 }
             } catch (IOException e) {
@@ -180,7 +183,7 @@ public class MainActivity extends AppCompatActivity implements
 
     private void backupLocalCopiar() {
         try {
-            backupLocalCopiar(database, bk_database);
+            copiarArchivo(database, bk_database);
             toast("Backup local hecha. ");
         } catch (IOException e) {
             toast("No se ha podido hacer la backup local. Vuelve a intentarlo. ");
@@ -191,6 +194,7 @@ public class MainActivity extends AppCompatActivity implements
         try(EstudiosSQLiteHelper usdbh =
                     new EstudiosSQLiteHelper(this,
                             "DBEstudios", null, 1);){
+            SQLiteDatabase db;
             db = usdbh.getWritableDatabase();
 
             //db.execSQL("DROP TABLE IF EXISTS DBEstudios");
@@ -201,7 +205,7 @@ public class MainActivity extends AppCompatActivity implements
 
             listaEstudios.clear();
 
-            rellenarLista();
+            rellenarLista(db);
 
             db.close();
         }
@@ -210,7 +214,7 @@ public class MainActivity extends AppCompatActivity implements
 
     }
 
-    private void backupLocalCopiar(File src, File dst) throws IOException {
+    private void copiarArchivo(File src, File dst) throws IOException {
         InputStream in = new FileInputStream(src);
         try {
             OutputStream out = new FileOutputStream(dst);
@@ -230,35 +234,44 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void recibirArchivo() {
-        new Thread(recibirServer).start();
 
-        // Comprobar Resultado
-        callbackRecibirServer = new ResultCallbackRecibir() {
-            @Override
-            public void onSuccess() {
-                // Actualizar UI o lógica post-éxito
-                runOnUiThread(() -> {
-                    toast("Se restauraron los datos de la nube. ");
-                });
-            }
+        if(!AdaptadorFilas.UsandoBBDD.getUsandoBBDD()){
+            new Thread(recibirServer).start();
 
-            @Override
-            public void onFailure(Exception e) {
-                // Manejar error
-                runOnUiThread(() -> {
-                    toast(e.getMessage());
-                    try {
-                        backupLocalCopiar(bk_database, database);
-                    } catch (IOException ex) {
-                        toast("Copia local incorrecta. ");
-                    }
-                });
-            }
-        };
+            // Comprobar Resultado
+            callbackRecibirServer = new ResultCallbackRecibir() {
+                @Override
+                public void onSuccess() {
+                    // Actualizar UI o lógica post-éxito
+                    runOnUiThread(() -> {
+                        toast("Se descargaron los datos de la nube. ");
+                        try {
+                            copiarArchivo(database_server, database);
+                            toast("Se revirtieron los datos de la nube. ");
+                        } catch (IOException e) {
+                            toast("No se pudo revertir la copia del servidor. ");
+                        }
+                    });
+                }
 
-
-
-
+                @Override
+                public void onFailure(Exception e) {
+                    // Manejar error
+                    runOnUiThread(() -> {
+                        try {
+                            copiarArchivo(bk_database, database);
+                            toast("Backup revertida localmente. ");
+                        } catch (IOException ex) {
+                            toast("No se pudo revertir la copia. ");
+                        }
+                        toast(e.getMessage());
+                        actualizarDatos();
+                    });
+                }
+            };
+        }else{
+            toast("La BBDD está siendo usada. Prueba en unos segundos. ");
+        }
 
     }
 
@@ -315,9 +328,8 @@ public class MainActivity extends AppCompatActivity implements
                     }
                 }
             } catch (IOException e) {
-                if (callbackRecibirServer != null) {
-                    new Handler(Looper.getMainLooper()).post(() -> callbackRecibirServer.onFailure(e));
-                }
+
+                new Handler(Looper.getMainLooper()).post(() -> callbackRecibirServer.onFailure(e));
             }
 
         }
@@ -325,31 +337,37 @@ public class MainActivity extends AppCompatActivity implements
     private void enviarArchivoNube() {
         //ARCHIVO SQLITE:
 
-        new Thread(llamadaANube).start();
+        if(!AdaptadorFilas.UsandoBBDD.getUsandoBBDD()){
 
-        // Comprobar Resultado
-        callbackEnviarServer = new ResultCallbackEnviar() {
-            @Override
-            public void onSuccess() {
-                // Actualizar UI o lógica post-éxito
-                runOnUiThread(() -> {
-                    toast("Se guardó el mensaje en la nube. ");
-                });
-            }
+            new Thread(enviarANube).start();
 
-            @Override
-            public void onFailure(Exception e) {
-                // Manejar error
-                runOnUiThread(() -> {
-                    toast("La copia en el servidor no funcionó. Se hará una backup local. ");
-                    backupLocalCopiar();
-                });
-            }
-        };
+            // Comprobar Resultado
+            callbackEnviarServer = new ResultCallbackEnviar() {
+                @Override
+                public void onSuccess() {
+                    // Actualizar UI o lógica post-éxito
+                    runOnUiThread(() -> {
+                        toast("Se guardó el mensaje en la nube. ");
+                    });
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    // Manejar error
+                    runOnUiThread(() -> {
+                        toast("La copia al servidor no funcionó. Se hará una backup local. ");
+                        backupLocalCopiar();
+                    });
+                }
+            };
+        }else{
+            toast("La BBDD está siendo usada. Prueba en unos segundos. ");
+        }
 
 
 
     }
+
 
 
     public interface ResultCallbackEnviar {
@@ -361,18 +379,19 @@ public class MainActivity extends AppCompatActivity implements
         void onFailure(Exception e);
     }
 
-    Runnable llamadaANube = new Runnable() {
+    Runnable enviarANube = new Runnable() {
         @Override
         public void run() {
             try {
                 final int BUFFER_SIZE = 4096; // 4 KB
 
                 try (Socket socket = new Socket()) {
+
                     FileInputStream fis = new FileInputStream(database);
                     BufferedInputStream inStream = new BufferedInputStream(fis);
-                    //ENVIAR ARCHIVO
                     socket.connect(new InetSocketAddress(SERVIDOR_IP, PUERTO), 1000);
                     DataOutputStream outStream = new DataOutputStream(socket.getOutputStream());
+                    //ENVIAR ARCHIVO
                     outStream.writeUTF("ENVIAR");
 
 
@@ -437,8 +456,19 @@ public class MainActivity extends AppCompatActivity implements
             listaEstudios.add(a);
     }
 
-    private void rellenarLista() {
-        Cursor c = db.rawQuery("select * from estudio;", null);
+    private long insertarSQL(Estudio estudio){
+        long  res=-1;
+        try(EstudiosSQLiteHelper usdbh =
+                    new EstudiosSQLiteHelper(this,
+                            "DBEstudios", null, 1);) {
+
+            res = usdbh.insertarSQL(estudio);
+        }
+        return res;
+    }
+
+    private void rellenarLista(SQLiteDatabase db) {
+        Cursor c = db.rawQuery("select * from estudio", null);
 
         while (c.moveToNext()) {
             int index = c.getColumnIndex("NOMBRE");
@@ -492,7 +522,7 @@ public class MainActivity extends AppCompatActivity implements
         try(EstudiosSQLiteHelper usdbh =
                     new EstudiosSQLiteHelper(this,
                             "DBEstudios", null, 1);) {
-            db = usdbh.getWritableDatabase();
+            SQLiteDatabase db = usdbh.getWritableDatabase();
 
 
             res = db.delete("Estudio",
@@ -623,9 +653,9 @@ public class MainActivity extends AppCompatActivity implements
             try(EstudiosSQLiteHelper usdbh =
                         new EstudiosSQLiteHelper(this,
                                 "DBEstudios", null, 1);) {
-                db = usdbh.getWritableDatabase();
+                SQLiteDatabase db = usdbh.getWritableDatabase();
 
-                datosDePrueba();
+
                 db.close();
             }
             ver=true;
@@ -640,30 +670,12 @@ public class MainActivity extends AppCompatActivity implements
         dialog.show(getSupportFragmentManager(), "CustomDialog");
     }
 
-    private long insertarSQL(Estudio libro){
-        long newRowId=0;
-        try(EstudiosSQLiteHelper usdbh =
-                    new EstudiosSQLiteHelper(this,
-                            "DBEstudios", null, 1);){
-            db = usdbh.getWritableDatabase();
-
-            ContentValues values = new ContentValues();
-            values.put("NOMBRE", libro.getNombre());
-            values.put("DESCRIPCION", libro.getDescripcion());
-            values.put("CUENTA", libro.getCuenta());
-
-            newRowId = db.insert("Estudio", null, values);
-
-            db.close();
-        }
-        return newRowId;
-    }
     private int editarSQL(Estudio antiguo, Estudio nuevo){
         int res=-1;
         try(EstudiosSQLiteHelper usdbh =
                     new EstudiosSQLiteHelper(this,
                             "DBEstudios", null, 1);){
-            db = usdbh.getWritableDatabase();
+            SQLiteDatabase db = usdbh.getWritableDatabase();
 
             ContentValues values = new ContentValues();
             values.put("NOMBRE", nuevo.getNombre());
@@ -672,7 +684,7 @@ public class MainActivity extends AppCompatActivity implements
 
             // Actualizar usando el ID como condición
             String[] id = {antiguo.getNombre()};
-            res=db.update("Estudio",
+            res= db.update("Estudio",
                     values,
                     "nombre = ?",
                     id);

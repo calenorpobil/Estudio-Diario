@@ -73,7 +73,6 @@
         android:background="@drawable/round_button"
         android:drawablePadding="0dp"
         android:includeFontPadding="false"
-        android:onClick="click_revert"
         android:padding="0dp"
         android:text="@string/bt_revert"
         android:textSize="30sp"

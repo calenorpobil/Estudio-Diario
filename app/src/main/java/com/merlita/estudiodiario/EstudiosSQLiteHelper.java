@@ -1,9 +1,12 @@
 package com.merlita.estudiodiario;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.database.sqlite.SQLiteOpenHelper;
+
+import com.merlita.estudiodiario.Modelos.Estudio;
 
 import java.io.File;
 
@@ -14,6 +17,38 @@ public class EstudiosSQLiteHelper extends SQLiteOpenHelper {
             "NOMBRE VARCHAR(50) PRIMARY KEY UNIQUE," +
             "DESCRIPCION VARCHAR(9), " +
             "CUENTA INTEGER);";
+
+    public long insertarSQL(Estudio libro){
+        SQLiteDatabase db = getWritableDatabase();
+        long newRowId=0;
+
+        ContentValues values = new ContentValues();
+        values.put("NOMBRE", libro.getNombre());
+        values.put("DESCRIPCION", libro.getDescripcion());
+        values.put("CUENTA", libro.getCuenta());
+
+        newRowId = db.insert("Estudio", null, values);
+
+        db.close();
+        return newRowId;
+    }
+
+    public long editarSQL(SQLiteDatabase db, Estudio nuevo, int nuevaCuenta){
+        long res=-1;
+        ContentValues values = new ContentValues();
+        values.put("NOMBRE", nuevo.getNombre());
+        values.put("DESCRIPCION", nuevo.getDescripcion());
+        values.put("CUENTA", nuevaCuenta);
+
+        // Actualizar usando el ID como condición
+        String[] id = {nuevo.getNombre()};
+        res=db.update("Estudio",
+                values,
+                "nombre = ?",
+                id);
+        return res;
+    }
+
 
     public EstudiosSQLiteHelper(Context contexto, String nombre,
                                 CursorFactory factory, int version) {
