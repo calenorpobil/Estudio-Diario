@@ -27,16 +27,6 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
     public interface OnButtonClickListener {
         void onButtonClick(int position);
     }
-    public  interface UsandoBBDD {
-        static void setUsandoBBDD(boolean a){
-            usando=a;
-        }
-
-        static boolean getUsandoBBDD() {
-            return usando;
-        }
-    }
-    UsandoBBDD usandoBBDD;
 
     private OnButtonClickListener listener;
     Estudio estudioFila;
@@ -85,7 +75,6 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
         holder.btMas.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                UsandoBBDD.setUsandoBBDD(true);
                 Estudio actual = lista.get(position);
                 int cuenta = actual.getCuenta();
 
@@ -94,7 +83,6 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
                 if(editarSQL(actual, cuenta)!=-1) {
                     actual.setCuenta(cuenta);
                 }
-                UsandoBBDD.setUsandoBBDD(false);
             }
         });
 
@@ -102,12 +90,11 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
 
 
     public AdaptadorFilas(Context context, ArrayList<Estudio> lista,
-                          OnButtonClickListener listener, UsandoBBDD  usandoBBDD) {
+                          OnButtonClickListener listener) {
         super();
         this.context = context;
         this.lista = lista;
         this.listener = listener;
-        this.usandoBBDD = usandoBBDD;
     }
 
     @Override

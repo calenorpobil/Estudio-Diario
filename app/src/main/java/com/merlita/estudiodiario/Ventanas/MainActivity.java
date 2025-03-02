@@ -3,8 +3,10 @@ package com.merlita.estudiodiario.Ventanas;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteAbortException;
 import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteDatabaseCorruptException;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -50,14 +52,12 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements
-        DialogoMenu.CustomDialogListener, AdaptadorFilas.OnButtonClickListener,
-        AdaptadorFilas.UsandoBBDD{
+        DialogoMenu.CustomDialogListener, AdaptadorFilas.OnButtonClickListener{
 
     RecyclerView vistaRecycler;
     ArrayList<Estudio> listaEstudios = new ArrayList<Estudio>();
     TextView tv;
     AdaptadorFilas adaptadorFilas;
-    AdaptadorFilas.UsandoBBDD usandoBBDD;
     Button btAlta, btCopia, btRevert;
     EditText et;
     int posicionEdicion;
@@ -67,6 +67,7 @@ public class MainActivity extends AppCompatActivity implements
 
     ResultCallbackEnviar callbackEnviarServer;
     ResultCallbackRecibir callbackRecibirServer;
+
 
     File database = new File(
             Environment.getDataDirectory()+
@@ -109,14 +110,17 @@ public class MainActivity extends AppCompatActivity implements
         btCopia = findViewById(R.id.btCopia);
         btRevert = findViewById(R.id.btRevert);
         vistaRecycler = findViewById(R.id.recyclerView);
-        adaptadorFilas = new AdaptadorFilas(this, listaEstudios, this, usandoBBDD);
+        adaptadorFilas = new AdaptadorFilas(this, listaEstudios, this);
 
 
         vistaRecycler.setLayoutManager(new LinearLayoutManager(this));
         vistaRecycler.setAdapter(adaptadorFilas);
 
         //datosDePrueba();
+        borrarTodo();
         actualizarDatos();
+
+
 
 
         btAlta.setOnClickListener(new View.OnClickListener(){
@@ -136,16 +140,23 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onClick(View view) {
                 //Pone archivo en carpeta files.
-                if(!isRecibiendo){
-                    isRecibiendo =true;
+
+
+                try {
                     recibirArchivo();
-
-
-                    //Copia el database de Files (Servidor) al original.
-
-                    actualizarDatos();
-                    isRecibiendo =false;
+                }catch (SQLiteDatabaseCorruptException ex){
+                    toast("El archivo está en uso. Inténtalo más tarde. ");
                 }
+
+
+                try {
+                    copiarArchivo(database_server, database);
+                } catch (IOException e) {
+                    toast("No hay un archivo para revertir. ");
+                }
+
+
+                actualizarDatos();
 
             }
         });
@@ -191,23 +202,21 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     public void actualizarDatos() {
-        try(EstudiosSQLiteHelper usdbh =
-                    new EstudiosSQLiteHelper(this,
-                            "DBEstudios", null, 1);){
-            SQLiteDatabase db;
-            db = usdbh.getWritableDatabase();
+        try{
+            try(EstudiosSQLiteHelper usdbh =
+                        new EstudiosSQLiteHelper(this,
+                                "DBEstudios", null, 1);){
+                SQLiteDatabase db;
+                db = usdbh.getWritableDatabase();
 
-            //db.execSQL("DROP TABLE IF EXISTS DBEstudios");
+                listaEstudios.clear();
 
-            //Crear tabla si existe:
-            usdbh.onCreate(db);
+                rellenarLista(db);
 
-
-            listaEstudios.clear();
-
-            rellenarLista(db);
-
-            db.close();
+                db.close();
+            }
+        } catch (SQLiteDatabaseCorruptException ex){
+            toast("Intentalo en otro momento. ");
         }
         vistaRecycler.setLayoutManager(new LinearLayoutManager(this));
         vistaRecycler.setAdapter(adaptadorFilas);
@@ -235,43 +244,32 @@ public class MainActivity extends AppCompatActivity implements
 
     private void recibirArchivo() {
 
-        if(!AdaptadorFilas.UsandoBBDD.getUsandoBBDD()){
-            new Thread(recibirServer).start();
+        new Thread(recibirServer).start();
 
-            // Comprobar Resultado
-            callbackRecibirServer = new ResultCallbackRecibir() {
-                @Override
-                public void onSuccess() {
-                    // Actualizar UI o lógica post-éxito
-                    runOnUiThread(() -> {
-                        toast("Se descargaron los datos de la nube. ");
-                        try {
-                            copiarArchivo(database_server, database);
-                            toast("Se revirtieron los datos de la nube. ");
-                        } catch (IOException e) {
-                            toast("No se pudo revertir la copia del servidor. ");
-                        }
-                    });
-                }
+        // Comprobar Resultado
+        callbackRecibirServer = new ResultCallbackRecibir() {
+            @Override
+            public void onSuccess() {
+                // Actualizar UI o lógica post-éxito
+                runOnUiThread(() -> {
+                    toast("Se descargaron los datos de la nube. ");
+                });
+            }
 
-                @Override
-                public void onFailure(Exception e) {
-                    // Manejar error
-                    runOnUiThread(() -> {
-                        try {
-                            copiarArchivo(bk_database, database);
-                            toast("Backup revertida localmente. ");
-                        } catch (IOException ex) {
-                            toast("No se pudo revertir la copia. ");
-                        }
-                        toast(e.getMessage());
-                        actualizarDatos();
-                    });
-                }
-            };
-        }else{
-            toast("La BBDD está siendo usada. Prueba en unos segundos. ");
-        }
+            @Override
+            public void onFailure(Exception e) {
+                // Manejar error
+                runOnUiThread(() -> {
+                    try {
+                        copiarArchivo(bk_database, database);
+                        toast("Backup revertida localmente. ");
+                    } catch (IOException ex) {
+                        toast("No se pudo revertir la copia. ");
+                    }
+                    toast(e.getMessage());
+                });
+            }
+        };
 
     }
 
@@ -299,6 +297,8 @@ public class MainActivity extends AppCompatActivity implements
                     // Prepara el archivo de destino (cliente)
                     archivoDestino = database_server;
 
+                    archivoDestino.delete();
+
                     if (!archivoDestino.exists()) {
                         try {
                             archivoDestino.createNewFile();
@@ -321,15 +321,20 @@ public class MainActivity extends AppCompatActivity implements
                         }
 
                         System.out.println("Archivo recibido: " + nombreArchivo);
-                    }
-                    // Notificar éxito
-                    if (callbackRecibirServer != null) {
-                        new Handler(Looper.getMainLooper()).post(() -> callbackRecibirServer.onSuccess());
+                        // Notificar éxito
+                        if (callbackRecibirServer != null) {
+                            new Handler(Looper.getMainLooper()).post(() -> callbackRecibirServer.onSuccess());
+                        }
                     }
                 }
             } catch (IOException e) {
 
                 new Handler(Looper.getMainLooper()).post(() -> callbackRecibirServer.onFailure(e));
+            }
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
 
         }
@@ -337,32 +342,28 @@ public class MainActivity extends AppCompatActivity implements
     private void enviarArchivoNube() {
         //ARCHIVO SQLITE:
 
-        if(!AdaptadorFilas.UsandoBBDD.getUsandoBBDD()){
 
-            new Thread(enviarANube).start();
+        new Thread(enviarANube).start();
 
-            // Comprobar Resultado
-            callbackEnviarServer = new ResultCallbackEnviar() {
-                @Override
-                public void onSuccess() {
-                    // Actualizar UI o lógica post-éxito
-                    runOnUiThread(() -> {
-                        toast("Se guardó el mensaje en la nube. ");
-                    });
-                }
+        // Comprobar Resultado
+        callbackEnviarServer = new ResultCallbackEnviar() {
+            @Override
+            public void onSuccess() {
+                // Actualizar UI o lógica post-éxito
+                runOnUiThread(() -> {
+                    toast("Se guardó el mensaje en la nube. ");
+                });
+            }
 
-                @Override
-                public void onFailure(Exception e) {
-                    // Manejar error
-                    runOnUiThread(() -> {
-                        toast("La copia al servidor no funcionó. Se hará una backup local. ");
-                        backupLocalCopiar();
-                    });
-                }
-            };
-        }else{
-            toast("La BBDD está siendo usada. Prueba en unos segundos. ");
-        }
+            @Override
+            public void onFailure(Exception e) {
+                // Manejar error
+                runOnUiThread(() -> {
+                    toast("La copia al servidor no funcionó. Se hará una backup local. ");
+                    backupLocalCopiar();
+                });
+            }
+        };
 
 
 
@@ -434,7 +435,14 @@ public class MainActivity extends AppCompatActivity implements
                     new Handler(Looper.getMainLooper()).post(() -> callbackEnviarServer.onFailure(e));
                 }
             }
+
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
+
     };
 
     private void mostrarFormularioAlta()  {
@@ -503,32 +511,38 @@ public class MainActivity extends AppCompatActivity implements
                 lanzadorEdit.launch(i);
                 return true;
             case 122:
+                //MENU --> BORRAR
                 posicionEdicion = item.getGroupId();
                 libro = listaEstudios.get(posicionEdicion);
                 if(borrarSQL(libro)!=-1){
                     listaEstudios.remove(libro);
                 }
                 actualizarDatos();
-                
-                //MENU --> BORRAR
+
                 return true;
             default:
                 return super.onContextItemSelected(item);
         }
     }
 
-    private int borrarSQL(Estudio libro) {
-        int res;
+    private long borrarSQL(Estudio libro) {
+        long res;
         try(EstudiosSQLiteHelper usdbh =
                     new EstudiosSQLiteHelper(this,
                             "DBEstudios", null, 1);) {
-            SQLiteDatabase db = usdbh.getWritableDatabase();
+            res = usdbh.borrarSQL(libro);
 
-
-            res = db.delete("Estudio",
-                    "nombre=?", new String[]{libro.getNombre()});
         }
         return res;
+    }
+    private void borrarTodo() {
+        long res;
+        try(EstudiosSQLiteHelper usdbh =
+                    new EstudiosSQLiteHelper(this,
+                            "DBEstudios", null, 1);) {
+            res = usdbh.borrarTodo();
+
+        }
     }
 
 

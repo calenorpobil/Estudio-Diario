@@ -33,6 +33,27 @@ public class EstudiosSQLiteHelper extends SQLiteOpenHelper {
         return newRowId;
     }
 
+    public long borrarSQL(Estudio libro){
+        long res=-1;
+        SQLiteDatabase db = getWritableDatabase();
+
+        res = db.delete("Estudio",
+                "nombre=?", new String[]{libro.getNombre()});
+
+        db.close();
+        return res;
+    }
+
+    public long borrarTodo() {
+        long res=-1;
+        SQLiteDatabase db = getWritableDatabase();
+
+        res = db.delete("Estudio",
+                null, null);
+
+        db.close();
+        return res;
+    }
     public long editarSQL(SQLiteDatabase db, Estudio nuevo, int nuevaCuenta){
         long res=-1;
         ContentValues values = new ContentValues();
@@ -58,7 +79,7 @@ public class EstudiosSQLiteHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         //Se ejecuta la sentencia SQL de creaci�n de la tabla
-        //db.execSQL("DROP TABLE IF EXISTS estudio");
+        db.execSQL("DROP TABLE IF EXISTS estudio");
 
         db.execSQL(sqlCreate);
     }
@@ -80,4 +101,5 @@ public class EstudiosSQLiteHelper extends SQLiteOpenHelper {
         //Se crea la nueva versi�n de la tabla
         db.execSQL(sqlCreate);
     }
+
 }
