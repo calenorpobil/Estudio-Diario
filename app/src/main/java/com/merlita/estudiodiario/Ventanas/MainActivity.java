@@ -111,8 +111,8 @@ public class MainActivity extends AppCompatActivity implements
         vistaRecycler.setLayoutManager(new LinearLayoutManager(this));
         vistaRecycler.setAdapter(adaptadorFilas);
 
+        //borrarTodo();
         //datosDePrueba();
-        borrarTodo();
         actualizarDatos();
 
 
@@ -434,13 +434,13 @@ public class MainActivity extends AppCompatActivity implements
 
 
     private void datosDePrueba() {
-        Estudio a = new Estudio("Tomar Cafe", "Registro de consumo diario de café", 3);
+        Estudio a = new Estudio("Tomar manzana", "Es bueno", 8);
         if(insertarSQL(a)!=-1)
             listaEstudios.add(a);
-        a= new Estudio("Ir al gimnasio", "Seguimiento de sesiones de entrenamiento", 8);
+        a= new Estudio("Vasos de agua", "También", 18);
         if(insertarSQL(a)!=-1)
             listaEstudios.add(a);
-        a= new Estudio("Diario", "Registro personal diario", 32);
+        a= new Estudio("Errores detectados", "Malos", 1080);
         if(insertarSQL(a)!=-1)
             listaEstudios.add(a);
     }
