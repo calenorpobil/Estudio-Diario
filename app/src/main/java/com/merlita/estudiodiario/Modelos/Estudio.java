@@ -1,5 +1,7 @@
 package com.merlita.estudiodiario.Modelos;
 
+import java.util.Objects;
+
 public class Estudio {
     private String nombre;          // Clave primaria
     private String descripcion;
@@ -35,5 +37,21 @@ public class Estudio {
 
     public void setDescripcion(String descripcion) {
         this.descripcion = descripcion;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        // self check
+        if (this == o)
+            return true;
+        // null check
+        if (o == null)
+            return false;
+        // type check and cast
+        if (getClass() != o.getClass())
+            return false;
+        Estudio person = (Estudio) o;
+        // field comparison
+        return Objects.equals(nombre, person.nombre);
     }
 }

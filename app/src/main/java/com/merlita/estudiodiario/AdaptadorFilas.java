@@ -66,8 +66,8 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
                 int cuenta = actual.getCuenta();
 
                 cuenta--;
-                holder.tvCuenta.setText(cuenta+"");
                 if(editarSQL(actual, cuenta)!=-1) {
+                    holder.tvCuenta.setText(cuenta+"");
                     actual.setCuenta(cuenta);
                 }
             }
@@ -79,8 +79,8 @@ public class AdaptadorFilas extends RecyclerView.Adapter<AdaptadorFilas.MiConten
                 int cuenta = actual.getCuenta();
 
                 cuenta++;
-                holder.tvCuenta.setText(cuenta+"");
                 if(editarSQL(actual, cuenta)!=-1) {
+                    holder.tvCuenta.setText(cuenta+"");
                     actual.setCuenta(cuenta);
                 }
             }

@@ -3,7 +3,6 @@ package com.merlita.estudiodiario.Ventanas;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteAbortException;
 import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabaseCorruptException;
@@ -28,11 +27,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.merlita.estudiodiario.AdaptadorFilas;
-import com.merlita.estudiodiario.FileUsageChecker;
-import com.merlita.estudiodiario.DialogoMenu;
-import com.merlita.estudiodiario.DialogoOrdenar;
 import com.merlita.estudiodiario.EstudiosSQLiteHelper;
-import com.merlita.estudiodiario.FragmentoTexto;
 import com.merlita.estudiodiario.Modelos.Estudio;
 import com.merlita.estudiodiario.R;
 
@@ -52,7 +47,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements
-        DialogoMenu.CustomDialogListener, AdaptadorFilas.OnButtonClickListener{
+        AdaptadorFilas.OnButtonClickListener{
 
     RecyclerView vistaRecycler;
     ArrayList<Estudio> listaEstudios = new ArrayList<Estudio>();
@@ -149,14 +144,7 @@ public class MainActivity extends AppCompatActivity implements
                 }
 
 
-                try {
-                    copiarArchivo(database_server, database);
-                } catch (IOException e) {
-                    toast("No hay un archivo para revertir. ");
-                }
 
-
-                actualizarDatos();
 
             }
         });
@@ -176,21 +164,6 @@ public class MainActivity extends AppCompatActivity implements
         });
     }
 
-    private void sustituyeSQLite() {
-        if(!FileUsageChecker.estaEnUso(database.toString())){
-            try {
-                if (database.delete()) {
-                    copiarArchivo(database_server, database);
-                    System.out.println("Backup del servidor finalizada. ");
-                }
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
-            }
-        }else{
-            toast("La base de dato está en uso. Inténtalo más tarde. ");
-        }
-
-    }
 
     private void backupLocalCopiar() {
         try {
@@ -253,6 +226,13 @@ public class MainActivity extends AppCompatActivity implements
                 // Actualizar UI o lógica post-éxito
                 runOnUiThread(() -> {
                     toast("Se descargaron los datos de la nube. ");
+                    try {
+                        copiarArchivo(database_server, database);
+                        toast("Backup de la nube revertida. ");
+                        actualizarDatos();
+                    } catch (IOException e) {
+                        toast("No hay un archivo para revertir. ");
+                    }
                 });
             }
 
@@ -261,12 +241,13 @@ public class MainActivity extends AppCompatActivity implements
                 // Manejar error
                 runOnUiThread(() -> {
                     try {
+                        //REVERTIR LOCALMENTE
                         copiarArchivo(bk_database, database);
                         toast("Backup revertida localmente. ");
+                        actualizarDatos();
                     } catch (IOException ex) {
                         toast("No se pudo revertir la copia. ");
                     }
-                    toast(e.getMessage());
                 });
             }
         };
@@ -629,60 +610,6 @@ public class MainActivity extends AppCompatActivity implements
 
 
 
-    @Override
-    public void onAltaLibroClick() {
-        // Aquí va el código para el alta de libro
-        mostrarFormularioAlta();
-    }
-
-    @Override
-    public void onAcercaDeClick() {
-        FragmentoTexto dialog = new FragmentoTexto();
-        dialog.show(getSupportFragmentManager(), "AcercaDe");
-
-    }
-
-    @Override
-    public void onOrdenarClick() {
-        // Mostrar opciones de ordenación
-        mostrarDialogoOrdenar();
-    }
-
-    @Override
-    public void onImportarClick() {
-        // Lógica de importación
-    }
-
-    @Override
-    public void onExportarClick() {
-        // Lógica de exportación
-    }
-
-    @Override
-    public void onVerDatosPrueba() {
-        if(ver){
-            adaptadorFilas.filtrarLista();
-            ver=false;
-        }else{
-            try(EstudiosSQLiteHelper usdbh =
-                        new EstudiosSQLiteHelper(this,
-                                "DBEstudios", null, 1);) {
-                SQLiteDatabase db = usdbh.getWritableDatabase();
-
-
-                db.close();
-            }
-            ver=true;
-        }
-        
-
-    }
-
-    // Método para mostrar el diálogo
-    private void mostrarDialogo() {
-        DialogoMenu dialog = new DialogoMenu();
-        dialog.show(getSupportFragmentManager(), "CustomDialog");
-    }
 
     private int editarSQL(Estudio antiguo, Estudio nuevo){
         int res=-1;
@@ -711,11 +638,6 @@ public class MainActivity extends AppCompatActivity implements
     }
 
 
-
-    private void mostrarDialogoOrdenar() {
-        DialogoOrdenar dialog = new DialogoOrdenar();
-        dialog.show(getSupportFragmentManager(), "DialogoOrdenar");
-    }
 
     @Override
     public void onButtonClick(int position) {
